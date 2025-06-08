@@ -5,7 +5,7 @@
 resource "oci_core_route_table" "pub_rt" {
   compartment_id = oci_identity_compartment.playground-compartment.id
   vcn_id = oci_core_virtual_network.vcn.id
-  display_name = "${var.vcn_dns_label}_pub_rt"
+  display_name = "pub_rt"
 
   route_rules {
     destination = var.default_route
@@ -26,7 +26,7 @@ resource "oci_core_route_table" "pub_rt" {
 resource "oci_core_route_table" "mgmt_rt" {
   compartment_id = oci_identity_compartment.playground-compartment.id
   vcn_id = oci_core_virtual_network.vcn.id
-  display_name = "${var.vcn_dns_label}_mgmt_rt"
+  display_name = "mgmt_rt"
 
   route_rules {
     destination = var.default_route
@@ -47,7 +47,7 @@ resource "oci_core_route_table" "mgmt_rt" {
 resource "oci_core_route_table" "app_rt" {
   compartment_id = oci_identity_compartment.playground-compartment.id
   vcn_id = oci_core_virtual_network.vcn.id
-  display_name = "${var.vcn_dns_label}_app_rt"
+  display_name = "app_rt"
 
   route_rules {
     destination = var.default_route

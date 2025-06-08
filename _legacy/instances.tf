@@ -28,7 +28,7 @@ resource "oci_core_instance" "mgmt001" {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   }
 
@@ -39,29 +39,29 @@ resource "oci_core_instance" "mgmt001" {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   }
 
   provisioner "file" {
-    content = file("~/OCI_Portfolio/app-provisioner.sh")
+    content = file("~/code/python/OCI_Portfolio/app-provisioner.sh")
     destination = "/home/${var.user}/app-provisioner.sh"
     connection {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   }
 
   provisioner "file" {
-    content = file("~/OCI_Portfolio/mgmt-provisioner.sh")
+    content = file("~/code/python/OCI_Portfolio/mgmt-provisioner.sh")
     destination = "/home/${var.user}/mgmt-provisioner.sh"
     connection {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   }
 
@@ -73,12 +73,12 @@ resource "oci_core_instance" "mgmt001" {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   }
 
   metadata = {
-    ssh_authorized_keys = format("%s%s", file(var.ssh-public-key), var.ssh-public-key_cloud-shell)
+    ssh_authorized_keys = format("%s%s", file(var.ssh_public_key), var.ssh_public_key_cloud-shell)
   } 
 
   shape_config {
@@ -96,7 +96,7 @@ resource "oci_core_instance" "mgmt001" {
       type = "ssh"
       user = var.user
       host = self.public_ip
-      private_key = file(var.ssh-private-key)
+      private_key = file(var.ssh_private_key)
     }
   } 
 }
@@ -126,7 +126,7 @@ resource "oci_core_instance" "app001" {
   }
 
   metadata = {
-    ssh_authorized_keys = format("%s%s", tls_private_key.mgmt001_key.public_key_openssh, var.ssh-public-key_cloud-shell)
+    ssh_authorized_keys = format("%s%s", tls_private_key.mgmt001_key.public_key_openssh, var.ssh_public_key_cloud-shell)
   }
 
   shape_config {
@@ -157,7 +157,7 @@ resource "oci_core_instance" "app002" {
   }
 
   metadata = {
-    ssh_authorized_keys = format("%s%s", tls_private_key.mgmt001_key.public_key_openssh, var.ssh-public-key_cloud-shell)
+    ssh_authorized_keys = format("%s%s", tls_private_key.mgmt001_key.public_key_openssh, var.ssh_public_key_cloud-shell)
   }
 
   shape_config {

@@ -1,2 +1,29 @@
-*terraform*
-variables.tf
+# Ansible
+*.retry
+*.vault
+*.log
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+terraform.tfvars
+*.backup
+
+# Jenkins
+*.log
+workspace/
+*.groovy~  # backup files
+
+# Python (if any scripts used)
+__pycache__/
+*.pyc
+*.pyo
+
+# OS / Editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

@@ -1,0 +1,22 @@
+# Ignore sensitive or unnecessary infra files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.backup
+terraform.tfvars
+
+# Ansible artifacts
+*.retry
+*.vault
+*.log
+
+# Ignore version control
+.git/
+.gitignore
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
