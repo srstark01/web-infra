@@ -1,0 +1,64 @@
+- name: Install required dependencies
+  yum:
+    name:
+      - java-21-openjdk
+      - fontconfig
+    state: present
+
+- name: Add Jenkins repo
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
+- name: Import Jenkins GPG key
+  rpm_key:
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    state: present
+
+- name: Upgrade all packages
+  yum:
+    name: '*'
+    state: latest
+
+- name: Install Jenkins
+  yum:
+    name: jenkins
+    state: present
+
+- name: Ensure Jenkins Groovy init directory exists
+  file:
+    path: /var/lib/jenkins/init.groovy.d
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Deploy Jenkins Groovy security script from template
+  template:
+    src: security.groovy.j2
+    dest: /var/lib/jenkins/init.groovy.d/security.groovy
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: Ensure Jenkins is enabled and started
+  systemd:
+    name: jenkins
+    enabled: yes
+    state: started
+
+- name: Open port 8080 in firewalld
+  firewalld:
+    port: 8080/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_distribution == "OracleLinux"
+
+- name: Include plugin installer
+  include_tasks: install_plugins.yml
+  vars:
+    role_path: "{{ role_path }}"
