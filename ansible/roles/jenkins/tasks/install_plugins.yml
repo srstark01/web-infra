@@ -1,0 +1,52 @@
+- name: Download Jenkins CLI jar on remote Jenkins host
+  get_url:
+    url: "http://localhost:8080/jnlpJars/jenkins-cli.jar"
+    dest: "/tmp/jenkins-cli.jar"
+  become: true
+
+- name: Install plugins via jenkins-cli
+  command: >
+    java -jar /tmp/jenkins-cli.jar
+    -s http://localhost:8080
+    -auth {{ jenkins_admin_user }}:{{ jenkins_admin_password }}
+    install-plugin {{ item }}
+  loop: "{{ lookup('file', 'files/plugins.txt').splitlines() }}"
+  become: false
+
+- name: Get Jenkins version from HTTP headers
+  uri:
+    url: "http://localhost:8080/login"
+    method: GET
+    return_content: no
+    status_code: 200
+  register: jenkins_response
+  become: false
+
+- name: Set Jenkins version fact
+  set_fact:
+    jenkins_version: "{{ jenkins_response['x_jenkins'] }}"
+
+- name: Mark Jenkins setup wizard as completed
+  copy:
+    dest: /var/lib/jenkins/jenkins.install.InstallUtil.lastExecVersion
+    content: "{{ jenkins_version }}"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  become: true
+
+- name: Set Jenkins install state to completed
+  copy:
+    dest: /var/lib/jenkins/jenkins.install.state
+    content: "RUNNING"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  become: true
+
+- name: Restart Jenkins with systemd
+  systemd:
+    name: jenkins
+    state: restarted
+    enabled: true
+  become: true
