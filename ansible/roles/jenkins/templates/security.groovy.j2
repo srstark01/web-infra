@@ -1,17 +1,18 @@
 #!groovy
-
 import jenkins.model.*
 import hudson.security.*
 
 def instance = Jenkins.getInstance()
 
-// Create admin user from Ansible template
-def hudsonRealm = new HudsonPrivateSecurityRealm(false)
-hudsonRealm.createAccount("{{ jenkins_admin_user }}", "{{ jenkins_admin_password }}")
-instance.setSecurityRealm(hudsonRealm)
+def realm = new HudsonPrivateSecurityRealm(false)
+if (realm.getUser("{{ jenkins_admin_user }}") == null) {
+  realm.createAccount("{{ jenkins_admin_user }}", "{{ jenkins_admin_password }}")
+}
+instance.setSecurityRealm(realm)
 
 def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
 strategy.setAllowAnonymousRead(false)
 instance.setAuthorizationStrategy(strategy)
 
 instance.save()
+

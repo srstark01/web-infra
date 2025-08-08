@@ -1,0 +1,37 @@
+- name: Pull container image
+  docker_image:
+    name: "{{ docker_image_abidex_webserver }}"
+    source: pull
+
+- name: Run abidex-webserver container
+  docker_container:
+    name: abidex-webserver
+    image: "{{ docker_image_abidex_webserver }}"
+    state: started
+    recreate: true
+    pull: true
+    restart_policy: always
+    env:
+      CONFLUENCE_BASE: "{{ confluence_base }}"
+      ABIDEX_EMAIL: "{{ abidex_email }}"
+      CONFLUENCE_API_TOKEN: "{{ confluence_api_token }}"
+      ABIDEX_KEY: "{{ abidex_key }}"
+    published_ports:
+      - "8000:8000"
+
+- name: Run portfolio container
+  docker_container:
+    name: portfolio
+    image: "{{ docker_image_portfolio }}"
+    state: started
+    recreate: true
+    pull: true
+    restart_policy: always
+    env:
+      PORTFOLIO_KEY: "{{ portfolio_key }}"
+    published_ports:
+      - "8001:8001"
+
+- name: Prune unused Docker images
+  command: docker image prune -f
+  when: cleanup_unused_images | default(false)
