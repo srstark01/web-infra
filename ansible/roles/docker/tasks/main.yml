@@ -66,6 +66,11 @@
     recreate: true
     pull: true
     restart_policy: always
+    env:
+      CONFLUENCE_BASE: "{{ confluence_base }}"
+      ABIDEX_EMAIL: "{{ abidex_email }}"
+      CONFLUENCE_API_TOKEN: "{{ confluence_api_token }}"
+      ABIDEX_KEY: "{{ abidex_key }}"
     published_ports:
       - "8000:8000"
 
@@ -77,6 +82,8 @@
     recreate: true
     pull: true
     restart_policy: always
+    env:
+      PORTFOLIO_KEY: "{{ portfolio_key }}"
     published_ports:
       - "8001:8001"
 
