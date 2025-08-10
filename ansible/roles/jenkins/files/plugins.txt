@@ -1,7 +1,0 @@
-git
-workflow-aggregator
-credentials-binding
-pipeline-stage-view
-junit
-antisamy-markup-formatter
-matrix-auth
