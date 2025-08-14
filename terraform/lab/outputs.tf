@@ -2,10 +2,10 @@ output "all-availability-domains-in-your-tenancy" {
   value = data.oci_identity_availability_domains.ads.availability_domains
   }
 
-output "app_os_images" {
-  value = data.oci_core_images.os_images
+output "images" {
+  value = {
+    for k, v in var.envs :
+    k => data.oci_core_images.images[k]
+    if try(v.os, null) != null
   }
-
-output "app_images" {
-  value = data.oci_core_images.app_images
-  }
+}

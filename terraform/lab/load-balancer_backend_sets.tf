@@ -1,58 +1,25 @@
-resource "oci_load_balancer_backend_set" "backend-set-abidex" {
-  name = "backend-set-abidex-${var.compartment_name}"
-  load_balancer_id = oci_load_balancer_load_balancer.load-balancer.id
-  policy = "LEAST_CONNECTIONS"
-
-  health_checker {
-    protocol = "HTTP"
-    url_path = "/home"
-    port     = 8000
+resource "oci_load_balancer_backend_set" "backend_set" {
+  for_each = {
+    for pair in flatten([
+      for env, cfg in var.envs : [
+        for svc_name in try(cfg.backends.services, []) : {
+          key   = "${env}:${svc_name}"
+          value = {
+            env = env
+            svc = one([for s in var.services : s if s.name == svc_name])
+          }
+        }
+      ]
+    ]) : pair.key => pair.value
   }
-}
-resource "oci_load_balancer_backend_set" "backend-set-portfolio" {
-  name = "backend-set-portfolio-${var.compartment_name}"
-  load_balancer_id = oci_load_balancer_load_balancer.load-balancer.id
-  policy = "LEAST_CONNECTIONS"
+
+  load_balancer_id = oci_load_balancer_load_balancer.load_balancer.id
+  name             = "${var.compartment_name}_backend-set_${each.value.svc.name}_${each.value.env}"
+  policy           = each.value.svc.policy
 
   health_checker {
-    protocol = "HTTP"
-    url_path = "/home"
-    port     = 8001
-  }
-}
-
-resource "oci_load_balancer_backend_set" "backend-set-abidex-stg" {
-  name = "backend-set-abidex-${var.stg_dns}-${var.compartment_name}"
-  load_balancer_id = oci_load_balancer_load_balancer.load-balancer.id
-  policy = "LEAST_CONNECTIONS"
-
-  health_checker {
-    protocol = "HTTP"
-    url_path = "/home"
-    port     = 8000
-  }
-}
-
-resource "oci_load_balancer_backend_set" "backend-set-portfolio-stg" {
-  name = "backend-set-portfolio-${var.stg_dns}-${var.compartment_name}"
-  load_balancer_id = oci_load_balancer_load_balancer.load-balancer.id
-  policy = "LEAST_CONNECTIONS"
-
-  health_checker {
-    protocol = "HTTP"
-    url_path = "/home"
-    port     = 8001
-  }
-}
-
-resource "oci_load_balancer_backend_set" "backend-set-jenkins-mgmt" {
-  name = "backend-set-jenkins-${var.mgmt_dns}-${var.compartment_name}"
-  load_balancer_id = oci_load_balancer_load_balancer.load-balancer.id
-  policy = "LEAST_CONNECTIONS"
-
-  health_checker {
-    protocol = "HTTP"
-    url_path = "/login"
-    port     = 8080
+    protocol = upper(each.value.svc.protocol)   # "HTTP"|"HTTPS"|"TCP"
+    port     = each.value.svc.port
+    url_path = each.value.svc.url_path
   }
 }
