@@ -18,6 +18,8 @@ variable "vcn_dns" {type = string}
 
 variable "compartment_name" {type = string}
 
+variable "backend_namespace" {type = string}
+
 variable "services" {type = list(object({
   name     = string
   policy   = string
