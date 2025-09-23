@@ -1,9 +1,5 @@
 variable "ocid_tenancy" {type = string}
 variable "ocid_compartment" {type = string}
-variable "ocid_user" {type = string}
-
-variable "fingerprint" {type = string}
-variable "oci_private_key" {type = string}
 
 variable "ssh_private_key" {type = string}
 variable "ssh_public_key" {type = string}
@@ -11,7 +7,7 @@ variable "ssh_public_key_cloud-shell" {type = string}
 
 variable "local_pub_ip" {type = string}
 
-variable "region" {type = string}
+# variable "region" {type = string}
 
 variable "vcn_net" {type = string}
 variable "vcn_dns" {type = string}

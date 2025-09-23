@@ -30,7 +30,7 @@ resource "oci_core_instance" "instance" {
     subnet_id = oci_core_subnet.subnet[each.value.key].id
     private_ip = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
     assign_public_ip = each.value.public
-    display_name = "${var.compartment_name}_vnic_${each.value.name}_${each.key}"
+    display_name = "${var.compartment_name}_vnic_${each.value.name}"
     nsg_ids = [oci_core_network_security_group.nsg[each.value.key].id]
   }
 
