@@ -21,6 +21,11 @@ data "oci_core_images" "images" {
 data "oci_core_services" "services" {
 }
 
-data "oci_objectstorage_namespace" "ns" {
+data "oci_objectstorage_namespace" "tenancy_ns" {
   compartment_id = var.ocid_tenancy   # tenancy OCID
+}
+
+# Namespace is needed to form the S3-compatible endpoint
+data "oci_objectstorage_namespace" "compartment_ns" {
+  compartment_id = var.ocid_compartment
 }

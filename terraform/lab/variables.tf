@@ -7,7 +7,7 @@ variable "ssh_public_key_cloud-shell" {type = string}
 
 variable "local_pub_ip" {type = string}
 
-# variable "region" {type = string}
+variable "region" {type = string}
 
 variable "vcn_net" {type = string}
 variable "vcn_dns" {type = string}
@@ -15,6 +15,12 @@ variable "vcn_dns" {type = string}
 variable "compartment_name" {type = string}
 
 variable "backend_namespace" {type = string}
+
+variable "comments_bucket"      { type = string}
+variable "iam_username"     { type = string}
+variable "iam_user_email"     { type = string}
+variable "retention_days"   { type = number}
+
 
 variable "services" {type = list(object({
   name     = string
