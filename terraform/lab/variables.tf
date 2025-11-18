@@ -21,6 +21,11 @@ variable "iam_username"     { type = string}
 variable "iam_user_email"     { type = string}
 variable "retention_days"   { type = number}
 
+variable "web_svc_abidex_stg"     { type = string}
+variable "web_svc_abidex_prod"     { type = string}
+variable "web_svc_jenkins_mgmt"     { type = string}
+variable "web_svc_portfolio_stg"     { type = string}
+variable "web_svc_portfolio_prod"     { type = string}
 
 variable "services" {type = list(object({
   name     = string

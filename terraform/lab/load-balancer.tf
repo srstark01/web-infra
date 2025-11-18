@@ -19,7 +19,7 @@ resource "oci_load_balancer_listener" "http_80" {
   name                = "listener-http"
   port                = 80
   protocol            = "HTTP"
-  routing_policy_name = oci_load_balancer_load_balancer_routing_policy.host_based["primary"].name
+  routing_policy_name = oci_load_balancer_load_balancer_routing_policy.host_based.name
 
-  default_backend_set_name = "${var.compartment_name}_backend-set_abidex_app"
+  default_backend_set_name = "${var.compartment_name}_backend-set_abidex_prod"
 }
