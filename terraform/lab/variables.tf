@@ -27,6 +27,10 @@ variable "web_svc_jenkins_mgmt"     { type = string}
 variable "web_svc_portfolio_stg"     { type = string}
 variable "web_svc_portfolio_prod"     { type = string}
 
+variable "db-001_address"     { type = string}
+
+variable "my_dns"     { type = string}
+
 variable "services" {type = list(object({
   name     = string
   policy   = string
