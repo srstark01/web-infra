@@ -18,3 +18,24 @@ resource "oci_core_route_table" "route_table" {
       }
   }
 }
+
+##################################################
+# DB Route Table
+##################################################
+
+resource "oci_core_route_table" "db_rt" {
+  compartment_id = oci_identity_compartment.compartment.id
+  vcn_id = oci_core_virtual_network.vcn.id
+  display_name = "${var.compartment_name}_route-table_db"
+
+  route_rules {
+    destination = var.default_route
+    network_entity_id = oci_core_nat_gateway.nat-gw.id
+  }
+
+  route_rules {
+    destination = var.svc_gw_all
+    destination_type  = "SERVICE_CIDR_BLOCK"
+    network_entity_id = oci_core_service_gateway.service-gw.id
+  }
+}

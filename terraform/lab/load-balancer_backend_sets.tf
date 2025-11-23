@@ -97,7 +97,7 @@ resource "oci_load_balancer_backend_set" "jenkins_mgmt" {
   health_checker {
     protocol = "HTTP"
     port     = 8080                # typical Jenkins port; change if different
-    url_path = "/"                 # or "/login" if you prefer
+    url_path = "/login"                 # or "/login" if you prefer
   }
 }
 

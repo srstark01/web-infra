@@ -31,6 +31,29 @@ variable "db-001_address"     { type = string}
 
 variable "my_dns"     { type = string}
 
+variable "adb_name" { type = string }
+variable "adb_display_name" { type = string }
+variable "adb_admin_password" { type = string }
+variable "adb_version" { type = string }
+variable "adb_wallet_password" { type = string }
+
+variable "local_wallet_dir" { type = string }
+
+variable "db_subnet_name" { type = string }
+variable "db_subnet_block" { type = string }
+variable "db_dns" { type = string }
+
+variable "mgmt_dns" { type = string }
+variable "mgmt_user" { type = string }
+
+variable "app_dns" { type = string }
+
+variable "stg_dns" { type = string }
+
+variable "default_route" { type = string }
+
+variable "svc_gw_all" { type = string }
+
 variable "services" {type = list(object({
   name     = string
   policy   = string

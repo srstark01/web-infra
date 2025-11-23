@@ -87,7 +87,7 @@ resource "oci_core_instance" "instance_mgmt" {
     private_ip     = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
     assign_public_ip = each.value.public
     display_name   = "${var.compartment_name}_vnic_${each.value.name}"
-    nsg_ids        = [oci_core_network_security_group.nsg[each.value.key].id]
+    nsg_ids        = [oci_core_network_security_group.mgmt_nsg.id]
   }
 
   source_details {
@@ -143,7 +143,7 @@ resource "oci_core_instance" "instance_stg" {
     private_ip     = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
     assign_public_ip = each.value.public
     display_name   = "${var.compartment_name}_vnic_${each.value.name}"
-    nsg_ids        = [oci_core_network_security_group.nsg[each.value.key].id]
+    nsg_ids        = [oci_core_network_security_group.stg_nsg.id]
   }
 
   source_details {
@@ -199,7 +199,7 @@ resource "oci_core_instance" "instance_app" {
     private_ip     = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
     assign_public_ip = each.value.public
     display_name   = "${var.compartment_name}_vnic_${each.value.name}"
-    nsg_ids        = [oci_core_network_security_group.nsg[each.value.key].id]
+    nsg_ids        = [oci_core_network_security_group.app_nsg.id]
   }
 
   source_details {
@@ -227,58 +227,58 @@ resource "oci_core_instance" "instance_app" {
   }
 }
 
-resource "oci_core_instance" "instance_db" {
-  for_each = tomap({
-    for node in (
-      contains(keys(var.envs.db), "nodes") && var.envs.db.nodes != null
-    ) ? var.envs.db.nodes : [] : node.name => {
-      key        = "db"
-      ad         = node.ad
-      name       = node.name
-      node_shape = var.envs.db.node_shape
-      ip         = node.ip
-      public     = node.public
-      disk_size  = var.envs.db.disk_size
-      mem        = var.envs.db.mem
-      cpu        = var.envs.db.cpu
-      user       = var.envs.db.user
-    }
-  })
+# resource "oci_core_instance" "instance_db" {
+#   for_each = tomap({
+#     for node in (
+#       contains(keys(var.envs.db), "nodes") && var.envs.db.nodes != null
+#     ) ? var.envs.db.nodes : [] : node.name => {
+#       key        = "db"
+#       ad         = node.ad
+#       name       = node.name
+#       node_shape = var.envs.db.node_shape
+#       ip         = node.ip
+#       public     = node.public
+#       disk_size  = var.envs.db.disk_size
+#       mem        = var.envs.db.mem
+#       cpu        = var.envs.db.cpu
+#       user       = var.envs.db.user
+#     }
+#   })
 
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[each.value.ad]["name"]
-  compartment_id      = oci_identity_compartment.compartment.id
-  display_name        = "${var.compartment_name}_instance_${each.value.name}_${each.value.key}"
-  shape               = each.value.node_shape
+#   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[each.value.ad]["name"]
+#   compartment_id      = oci_identity_compartment.compartment.id
+#   display_name        = "${var.compartment_name}_instance_${each.value.name}_${each.value.key}"
+#   shape               = each.value.node_shape
 
-  create_vnic_details {
-    subnet_id      = oci_core_subnet.subnet[each.value.key].id
-    private_ip     = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
-    assign_public_ip = each.value.public
-    display_name   = "${var.compartment_name}_vnic_${each.value.name}"
-    nsg_ids        = [oci_core_network_security_group.nsg[each.value.key].id]
-  }
+#   create_vnic_details {
+#     subnet_id      = oci_core_subnet.subnet[each.value.key].id
+#     private_ip     = cidrhost(oci_core_subnet.subnet[each.value.key].cidr_block, each.value.ip)
+#     assign_public_ip = each.value.public
+#     display_name   = "${var.compartment_name}_vnic_${each.value.name}"
+#     nsg_ids        = [oci_core_network_security_group.nsg[each.value.key].id]
+#   }
 
-  source_details {
-    source_type            = "image"
-    source_id              = data.oci_core_images.images[each.value.key].images[0].id
-    boot_volume_size_in_gbs = each.value.disk_size
-  }
+#   source_details {
+#     source_type            = "image"
+#     source_id              = data.oci_core_images.images[each.value.key].images[0].id
+#     boot_volume_size_in_gbs = each.value.disk_size
+#   }
 
-  shape_config {
-    memory_in_gbs = each.value.mem
-    ocpus         = each.value.cpu
-  }
+#   shape_config {
+#     memory_in_gbs = each.value.mem
+#     ocpus         = each.value.cpu
+#   }
 
-  metadata = {
-    ssh_authorized_keys = format("%s%s", file(var.ssh_public_key), var.ssh_public_key_cloud-shell)
-  }
+#   metadata = {
+#     ssh_authorized_keys = format("%s%s", file(var.ssh_public_key), var.ssh_public_key_cloud-shell)
+#   }
 
-  agent_config {
-    are_all_plugins_disabled = false
+#   agent_config {
+#     are_all_plugins_disabled = false
 
-    plugins_config {
-      name          = "Bastion"
-      desired_state = "ENABLED"
-    }
-  }
-}
+#     plugins_config {
+#       name          = "Bastion"
+#       desired_state = "ENABLED"
+#     }
+#   }
+# }

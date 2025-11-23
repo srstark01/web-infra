@@ -3,7 +3,7 @@ resource "oci_load_balancer_load_balancer" "load_balancer" {
     display_name = "${var.compartment_name}_load-balancer"
     shape = "flexible"
     network_security_group_ids = [
-        oci_core_network_security_group.nsg["pub"].id
+        oci_core_network_security_group.pub_nsg.id
     ]
     subnet_ids = [
       oci_core_subnet.subnet["pub"].id

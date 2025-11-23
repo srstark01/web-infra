@@ -4,3 +4,13 @@ resource "oci_core_security_list" "pub_security_list" {
   compartment_id = oci_identity_compartment.compartment.id
   vcn_id = oci_core_virtual_network.vcn.id
 }
+
+# ##################################################
+# # DB Security List
+# ##################################################
+
+# resource "oci_core_security_list" "securitylistDB" {
+#   display_name = "${var.compartment_name}_security-list_${var.db_dns}"
+#   compartment_id = oci_identity_compartment.compartment.id
+#   vcn_id = oci_core_virtual_network.vcn.id
+# }
