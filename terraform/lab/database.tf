@@ -44,21 +44,59 @@ resource "oci_database_autonomous_database" "lab_adb" {
   whitelisted_ips = [oci_core_instance.instance_mgmt["mgmt-001"].public_ip]
 }
 
+# resource "oci_database_autonomous_database_wallet" "lab_wallet" {
+#   autonomous_database_id = oci_database_autonomous_database.lab_adb.id
+#   password               = var.adb_wallet_password
+
+#   # <<< THIS IS THE IMPORTANT BIT
+#   base64_encode_content  = true
+# }
+
+# resource "local_file" "lab_wallet_zip" {
+#   filename = "${var.local_wallet_dir}/lab_adb_wallet.zip"
+
+#   # OCI now gives us base64; let local_file decode it safely to binary
+#   content_base64 = oci_database_autonomous_database_wallet.lab_wallet.content
+
+#   file_permission      = "0600"
+#   directory_permission = "0700"
+# }
+
 resource "oci_database_autonomous_database_wallet" "lab_wallet" {
   autonomous_database_id = oci_database_autonomous_database.lab_adb.id
   password               = var.adb_wallet_password
 
-  # <<< THIS IS THE IMPORTANT BIT
   base64_encode_content  = true
 }
 
+# 1) Download ZIP directly to the target directory — and keep it
 resource "local_file" "lab_wallet_zip" {
   filename = "${var.local_wallet_dir}/lab_adb_wallet.zip"
 
-  # OCI now gives us base64; let local_file decode it safely to binary
+  # Decode OCI base64 to binary ZIP
   content_base64 = oci_database_autonomous_database_wallet.lab_wallet.content
 
   file_permission      = "0600"
   directory_permission = "0700"
 }
 
+# 2) Unzip it inside the target directory, preserving the ZIP file
+resource "null_resource" "unzip_lab_wallet" {
+  triggers = {
+    wallet_hash = md5(oci_database_autonomous_database_wallet.lab_wallet.content)
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOC
+      set -e
+
+      # create extraction directory
+      mkdir -p "${var.local_wallet_dir}/lab_adb_wallet"
+
+      # unzip (force overwrite, suppress zip-bomb warnings)
+      UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE unzip -o \
+        "${local_file.lab_wallet_zip.filename}" \
+        -d "${var.local_wallet_dir}/lab_adb_wallet" || true
+    EOC
+  }
+}
