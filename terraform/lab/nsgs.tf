@@ -220,14 +220,14 @@ resource "oci_core_network_security_group_security_rule" "mgmt_app_sql_inbound" 
     }
 }
 
-### MGMT - ICMP Inbound from Local ###
+### MGMT - ICMP Inbound from All ###
 resource "oci_core_network_security_group_security_rule" "mgmt-local-icmp-inbound" {
     network_security_group_id = oci_core_network_security_group.mgmt_nsg.id
     direction = "INGRESS"
     description = "local-icmp-inbound"
     protocol = "1"
     source_type = "CIDR_BLOCK"
-    source = var.local_pub_ip
+    source = var.default_route
 }
 
 ### MGMT - SSH Inbound from Local ###
@@ -290,6 +290,22 @@ resource "oci_core_network_security_group_security_rule" "mgmt_pub_jenkins_inbou
         destination_port_range {
             max = 8080
             min = 8080
+        }
+    }
+}
+
+### MGMT - VPN Inbound from PUB ###
+resource "oci_core_network_security_group_security_rule" "mgmt_pub_vpn_inbound" {
+    network_security_group_id = oci_core_network_security_group.mgmt_nsg.id
+    direction = "INGRESS"
+    description = "vpn-inbound"
+    protocol = "17"
+    source_type = "CIDR_BLOCK"
+    source = var.default_route
+    udp_options {
+        destination_port_range {
+            max = 51820
+            min = 51820
         }
     }
 }
