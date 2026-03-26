@@ -5,27 +5,43 @@ OCI infrastructure rebuilt around reusable Terraform modules.
 ## Structure
 
 - `terraform/modules/compartment`: reusable compartment module
-- `terraform/oci`: root stack for the shared OCI compartment hierarchy
+- `terraform/oci-shared`: shared stack for the parent OCI compartment
+- `terraform/oci`: environment stack for a single child compartment
 - `terraform/oci/env`: environment-specific variable files
 
-## Bootstrap Scope
+## Shared Bootstrap
 
-The initial stack creates:
+Create the shared parent compartment once:
 
-- one parent project compartment under the tenancy
-- `dev` and `prod` child compartments under that parent
+```bash
+terraform -chdir=terraform/oci-shared init
+terraform -chdir=terraform/oci-shared apply -var-file=../common.tfvars -var-file=terraform.tfvars
+```
 
-## Environment Promotion
+This stack creates:
 
-The same Terraform code is intended to run across environments with different
-inputs rather than separate long-lived branches.
+- parent compartment: `web-infra`
+
+## Environment Deploys
+
+Each environment is deployed from `terraform/oci` and should use its own
+Terraform workspace so state stays isolated.
 
 Examples:
 
-- `terraform -chdir=terraform/oci plan -var-file=env/dev.tfvars`
-- `terraform -chdir=terraform/oci plan -var-file=env/prod.tfvars`
+```bash
+terraform -chdir=terraform/oci init
+terraform -chdir=terraform/oci workspace new dev
+terraform -chdir=terraform/oci workspace select dev
+terraform -chdir=terraform/oci apply -var-file=../common.tfvars -var-file=terraform.tfvars -var-file=env/dev.tfvars
+```
 
-This bootstrap stack creates:
+```bash
+terraform -chdir=terraform/oci workspace new prod
+terraform -chdir=terraform/oci workspace select prod
+terraform -chdir=terraform/oci apply -var-file=../common.tfvars -var-file=terraform.tfvars -var-file=env/prod.tfvars
+```
 
-- parent compartment: `web-infra`
-- child compartments: `web-infra-dev`, `web-infra-prod`
+The environment stack reads the parent compartment ID from the shared stack's
+local state by default, so `prod` can be deployed after `dev` without changing
+or destroying `dev`.

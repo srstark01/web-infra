@@ -1,3 +1,4 @@
+// Inputs accepted by the reusable compartment module.
 variable "parent_compartment_id" {
   description = "OCID of the parent compartment where this compartment will be created."
   type        = string

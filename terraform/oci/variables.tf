@@ -1,3 +1,4 @@
+// OCI provider authentication and targeting values.
 variable "tenancy_ocid" {
   description = "OCI tenancy OCID."
   type        = string
@@ -23,36 +24,35 @@ variable "region" {
   type        = string
 }
 
+// Naming inputs for the compartment this stack creates.
 variable "project_name" {
   description = "Base project name used in resource naming."
   type        = string
   default     = "web-infra"
 }
 
-variable "parent_compartment_name_override" {
-  description = "Optional explicit name for the parent compartment."
+variable "environment_name" {
+  description = "Environment name used in the child compartment name."
+  type        = string
+}
+
+variable "environment_description" {
+  description = "Description for the environment compartment."
+  type        = string
+}
+
+// Optional override that lets this stack skip remote-state lookup and
+// target an already-known parent compartment directly.
+variable "parent_compartment_id" {
+  description = "Optional existing parent project compartment OCID. If null, the shared stack state output is used."
   type        = string
   default     = null
 }
 
-variable "project_compartment_description" {
-  description = "Description for the parent project compartment."
+// Local path to the shared stack's state file. This is only used when
+// parent_compartment_id is left null.
+variable "shared_state_path" {
+  description = "Path to the shared stack state file used to discover the parent project compartment OCID."
   type        = string
-  default     = "Shared project compartment for web-infra environments."
-}
-
-variable "environment_compartments" {
-  description = "Child compartments to create beneath the project compartment."
-  type = map(object({
-    description = string
-  }))
-
-  default = {
-    dev = {
-      description = "Development environment compartment."
-    }
-    prod = {
-      description = "Production environment compartment."
-    }
-  }
+  default     = "../oci-shared/terraform.tfstate"
 }

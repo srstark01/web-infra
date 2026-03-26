@@ -1,4 +1,4 @@
-// Configure the OCI provider from values supplied in tfvars files.
+// Configure the OCI provider for the shared stack.
 provider "oci" {
   tenancy_ocid     = var.tenancy_ocid
   user_ocid        = var.user_ocid

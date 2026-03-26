@@ -1,25 +1,18 @@
-output "project_compartment_id" {
-  description = "OCID of the parent project compartment."
-  value       = module.project_compartment.id
+// Expose the resolved parent compartment so callers can see which
+// project compartment this environment stack was nested under.
+output "parent_compartment_id" {
+  description = "OCID of the parent project compartment used for this environment."
+  value       = local.resolved_parent_compartment_id
 }
 
-output "project_compartment_name" {
-  description = "Name of the parent project compartment."
-  value       = module.project_compartment.name
+// Useful for chaining other Terraform code to the created environment compartment.
+output "environment_compartment_id" {
+  description = "OCID of the environment compartment."
+  value       = module.environment_compartment.id
 }
 
-output "environment_compartment_ids" {
-  description = "Environment compartment OCIDs keyed by environment name."
-  value = {
-    for env, module_instance in module.environment_compartments :
-    env => module_instance.id
-  }
-}
-
-output "environment_compartment_names" {
-  description = "Environment compartment names keyed by environment name."
-  value = {
-    for env, module_instance in module.environment_compartments :
-    env => module_instance.name
-  }
+// Human-readable compartment name for verification and debugging.
+output "environment_compartment_name" {
+  description = "Name of the environment compartment."
+  value       = module.environment_compartment.name
 }
