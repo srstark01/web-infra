@@ -71,3 +71,8 @@ output "management_instance_001_public_ip" {
   description = "Primary public IP address of the management instance."
   value       = module.management_instance.public_ip
 }
+
+output "management_instance_001_nsg_id" {
+  description = "OCID of the NSG attached to the management instance."
+  value       = module.management_instance_001_nsg.id
+}

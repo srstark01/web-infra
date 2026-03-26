@@ -10,10 +10,11 @@ locals {
   )
 
   // Environment compartments follow the pattern "<project>-<environment>".
-  environment_compartment_name = "${var.project_name}-${var.environment_name}"
-  network_name_prefix          = "${local.environment_compartment_name}-network"
-  vcn_dns_label                = substr(var.environment_name, 0, 15)
-  management_instance_001_name = "${local.environment_compartment_name}-mgmt-001"
+  environment_compartment_name     = "${var.project_name}-${var.environment_name}"
+  network_name_prefix              = "${local.environment_compartment_name}-network"
+  vcn_dns_label                    = substr(var.environment_name, 0, 15)
+  management_instance_001_name     = "${local.environment_compartment_name}-mgmt-001"
+  management_instance_001_nsg_name = "${local.environment_compartment_name}-mgmt-001-nsg"
 }
 
 // When parent_compartment_id is not passed directly, read the shared
@@ -62,6 +63,31 @@ module "environment_network" {
   app_prod_subnet_cidr_block    = var.app_prod_subnet_cidr_block
 }
 
+module "management_instance_001_nsg" {
+  source = "../modules/nsg"
+
+  compartment_id = module.environment_compartment.id
+  vcn_id         = module.environment_network.vcn_id
+  display_name   = local.management_instance_001_nsg_name
+  rules = [
+    {
+      description    = "Allow SSH only from the trusted public IP."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = var.management_instance_001_ssh_allowed_cidr
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 22, max = 22 }
+    },
+    {
+      description = "Allow all outbound traffic from the management instance."
+      direction   = "EGRESS"
+      protocol    = "all"
+      cidr        = "0.0.0.0/0"
+      cidr_type   = "CIDR_BLOCK"
+    }
+  ]
+}
+
 module "management_instance" {
   source = "../modules/instance"
 
@@ -79,6 +105,7 @@ module "management_instance" {
   subnet_id               = module.environment_network.public_subnet_id
   assign_public_ip        = true
   hostname_label          = "mgmt-001"
+  nsg_ids                 = [module.management_instance_001_nsg.id]
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs

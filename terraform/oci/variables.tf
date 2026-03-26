@@ -125,3 +125,8 @@ variable "management_ssh_authorized_keys_path" {
   description = "Path to the SSH public key that should be installed on the management instance."
   type        = string
 }
+
+variable "management_instance_001_ssh_allowed_cidr" {
+  description = "Trusted public CIDR allowed to reach the management instance over SSH."
+  type        = string
+}

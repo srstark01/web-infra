@@ -91,6 +91,34 @@ resource "oci_core_route_table" "private" {
   }
 }
 
+resource "oci_core_security_list" "public" {
+  compartment_id = var.compartment_id
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name_prefix}-public-sl"
+
+  egress_security_rules {
+    description      = "Allow all outbound traffic from the public subnet."
+    destination      = "0.0.0.0/0"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all"
+    stateless        = false
+  }
+}
+
+resource "oci_core_security_list" "private" {
+  compartment_id = var.compartment_id
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name_prefix}-private-sl"
+
+  egress_security_rules {
+    description      = "Allow all outbound traffic from the private subnets."
+    destination      = "0.0.0.0/0"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all"
+    stateless        = false
+  }
+}
+
 resource "oci_core_subnet" "this" {
   for_each = local.subnets
 
@@ -100,5 +128,6 @@ resource "oci_core_subnet" "this" {
   display_name               = "${var.name_prefix}-${each.value.display_name_suffix}"
   dns_label                  = each.value.dns_label
   route_table_id             = each.value.route_table_key == "public" ? oci_core_route_table.public.id : oci_core_route_table.private.id
+  security_list_ids          = each.value.route_table_key == "public" ? [oci_core_security_list.public.id] : [oci_core_security_list.private.id]
   prohibit_public_ip_on_vnic = each.value.prohibit_public_ip_on_vnic
 }
