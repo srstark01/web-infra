@@ -16,3 +16,43 @@ output "environment_compartment_name" {
   description = "Name of the environment compartment."
   value       = module.environment_compartment.name
 }
+
+output "vcn_id" {
+  description = "OCID of the environment VCN."
+  value       = module.environment_network.vcn_id
+}
+
+output "vcn_cidr_blocks" {
+  description = "CIDR blocks assigned to the environment VCN."
+  value       = module.environment_network.vcn_cidr_blocks
+}
+
+output "internet_gateway_id" {
+  description = "OCID of the environment internet gateway."
+  value       = module.environment_network.internet_gateway_id
+}
+
+output "nat_gateway_id" {
+  description = "OCID of the environment NAT gateway."
+  value       = module.environment_network.nat_gateway_id
+}
+
+output "service_gateway_id" {
+  description = "OCID of the environment service gateway."
+  value       = module.environment_network.service_gateway_id
+}
+
+output "public_subnet_id" {
+  description = "OCID of the public subnet."
+  value       = module.environment_network.public_subnet_id
+}
+
+output "app_staging_subnet_id" {
+  description = "OCID of the private staging application subnet."
+  value       = module.environment_network.app_staging_subnet_id
+}
+
+output "app_prod_subnet_id" {
+  description = "OCID of the private production application subnet."
+  value       = module.environment_network.app_prod_subnet_id
+}

@@ -56,3 +56,24 @@ variable "shared_state_path" {
   type        = string
   default     = "../oci-shared/terraform.tfstate"
 }
+
+// Network layout for the environment-local VCN and subnets.
+variable "vcn_cidr_block" {
+  description = "CIDR block for the environment VCN."
+  type        = string
+}
+
+variable "public_subnet_cidr_block" {
+  description = "CIDR block for the public subnet that will later host the management instance and load balancer."
+  type        = string
+}
+
+variable "app_staging_subnet_cidr_block" {
+  description = "CIDR block for the private staging application subnet."
+  type        = string
+}
+
+variable "app_prod_subnet_cidr_block" {
+  description = "CIDR block for the private production application subnet."
+  type        = string
+}
