@@ -37,7 +37,7 @@ module "environment_compartment" {
 }
 
 module "environment_network" {
-  source = "../modules/oci-network"
+  source = "../modules/network"
 
   compartment_id                = module.environment_compartment.id
   name_prefix                   = local.network_name_prefix
