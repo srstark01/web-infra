@@ -13,6 +13,7 @@ locals {
   environment_compartment_name = "${var.project_name}-${var.environment_name}"
   network_name_prefix          = "${local.environment_compartment_name}-network"
   vcn_dns_label                = substr(var.environment_name, 0, 15)
+  management_instance_001_name = "${local.environment_compartment_name}-mgmt-001"
 }
 
 // When parent_compartment_id is not passed directly, read the shared
@@ -36,6 +37,19 @@ module "environment_compartment" {
   description           = var.environment_description
 }
 
+data "oci_identity_availability_domains" "environment" {
+  compartment_id = var.tenancy_ocid
+}
+
+data "oci_core_images" "management" {
+  compartment_id           = var.tenancy_ocid
+  operating_system         = var.management_os
+  operating_system_version = var.management_os_version
+  shape                    = var.management_shape
+  sort_by                  = "TIMECREATED"
+  sort_order               = "DESC"
+}
+
 module "environment_network" {
   source = "../modules/network"
 
@@ -46,4 +60,26 @@ module "environment_network" {
   public_subnet_cidr_block      = var.public_subnet_cidr_block
   app_staging_subnet_cidr_block = var.app_staging_subnet_cidr_block
   app_prod_subnet_cidr_block    = var.app_prod_subnet_cidr_block
+}
+
+module "management_instance" {
+  source = "../modules/instance"
+
+  availability_domain = coalesce(
+    var.management_availability_domain,
+    data.oci_identity_availability_domains.environment.availability_domains[0].name,
+  )
+  compartment_id = module.environment_compartment.id
+  display_name   = local.management_instance_001_name
+  shape          = var.management_shape
+  shape_config = can(regex("Flex$", var.management_shape)) ? {
+    ocpus         = var.management_shape_ocpus
+    memory_in_gbs = var.management_shape_memory_in_gbs
+  } : null
+  subnet_id               = module.environment_network.public_subnet_id
+  assign_public_ip        = true
+  hostname_label          = "mgmt-001"
+  ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
+  image_id                = data.oci_core_images.management.images[0].id
+  boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
 }

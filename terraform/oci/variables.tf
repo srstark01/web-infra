@@ -77,3 +77,51 @@ variable "app_prod_subnet_cidr_block" {
   description = "CIDR block for the private production application subnet."
   type        = string
 }
+
+// Management instance configuration.
+variable "management_availability_domain" {
+  description = "Optional explicit availability domain for the management instance. If null, the first AD in the region is used."
+  type        = string
+  default     = null
+}
+
+variable "management_shape" {
+  description = "OCI compute shape for the management instance."
+  type        = string
+  default     = "VM.Standard.A1.Flex"
+}
+
+variable "management_shape_ocpus" {
+  description = "OCPU count for the management instance flexible shape."
+  type        = number
+  default     = 1
+}
+
+variable "management_shape_memory_in_gbs" {
+  description = "Memory in GB for the management instance flexible shape."
+  type        = number
+  default     = 6
+}
+
+variable "management_os" {
+  description = "Operating system name used to resolve the management instance image."
+  type        = string
+  default     = "Oracle Linux"
+}
+
+variable "management_os_version" {
+  description = "Operating system version used to resolve the management instance image."
+  type        = string
+  default     = "9"
+}
+
+variable "management_boot_volume_size_in_gbs" {
+  description = "Boot volume size in GB for the management instance."
+  type        = number
+  default     = 50
+}
+
+variable "management_ssh_authorized_keys_path" {
+  description = "Path to the SSH public key that should be installed on the management instance."
+  type        = string
+}

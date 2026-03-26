@@ -56,3 +56,18 @@ output "app_prod_subnet_id" {
   description = "OCID of the private production application subnet."
   value       = module.environment_network.app_prod_subnet_id
 }
+
+output "management_instance_001_id" {
+  description = "OCID of the management instance."
+  value       = module.management_instance.id
+}
+
+output "management_instance_001_private_ip" {
+  description = "Primary private IP address of the management instance."
+  value       = module.management_instance.private_ip
+}
+
+output "management_instance_001_public_ip" {
+  description = "Primary public IP address of the management instance."
+  value       = module.management_instance.public_ip
+}

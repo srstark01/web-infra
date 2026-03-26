@@ -6,5 +6,5 @@ resource "oci_identity_compartment" "this" {
   description    = var.description
 
   // Allow Terraform to destroy the compartment if this module is removed.
-  enable_delete  = var.enable_delete
+  enable_delete = var.enable_delete
 }
