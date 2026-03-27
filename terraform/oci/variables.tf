@@ -130,3 +130,8 @@ variable "management_instance_001_ssh_allowed_cidr" {
   description = "Trusted public CIDR allowed to reach the management instance over SSH."
   type        = string
 }
+
+variable "management_instance_001_rdp_allowed_cidr" {
+  description = "Trusted public CIDR allowed to reach the management instance over RDP."
+  type        = string
+}

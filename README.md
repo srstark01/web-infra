@@ -49,5 +49,5 @@ local state by default, so `prod` can be deployed after `dev` without changing
 or destroying `dev`.
 
 Before applying the environment stack, update `terraform/oci/terraform.tfvars`
-with the management OS selection, SSH public key path, and trusted public CIDR
-allowed to reach the management instance over port `22`.
+with the management OS selection, SSH public key path, and trusted public CIDRs
+allowed to reach the management instance over ports `22` and `3389`.

@@ -79,6 +79,14 @@ module "management_instance_001_nsg" {
       tcp_port_range = { min = 22, max = 22 }
     },
     {
+      description    = "Allow RDP only from the trusted public IP."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = var.management_instance_001_rdp_allowed_cidr
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 3389, max = 3389 }
+    },
+    {
       description = "Allow all outbound traffic from the management instance."
       direction   = "EGRESS"
       protocol    = "all"
