@@ -126,12 +126,7 @@ variable "management_ssh_authorized_keys_path" {
   type        = string
 }
 
-variable "management_instance_001_ssh_allowed_cidr" {
-  description = "Trusted public CIDR allowed to reach the management instance over SSH."
-  type        = string
-}
-
-variable "management_instance_001_rdp_allowed_cidr" {
-  description = "Trusted public CIDR allowed to reach the management instance over RDP."
+variable "local_public_IP" {
+  description = "Trusted public CIDR allowed to reach the management instance."
   type        = string
 }

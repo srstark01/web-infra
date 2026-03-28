@@ -74,7 +74,7 @@ module "management_instance_001_nsg" {
       description    = "Allow SSH only from the trusted public IP."
       direction      = "INGRESS"
       protocol       = "6"
-      cidr           = var.management_instance_001_ssh_allowed_cidr
+      cidr           = var.local_public_IP
       cidr_type      = "CIDR_BLOCK"
       tcp_port_range = { min = 22, max = 22 }
     },
@@ -82,9 +82,32 @@ module "management_instance_001_nsg" {
       description    = "Allow RDP only from the trusted public IP."
       direction      = "INGRESS"
       protocol       = "6"
-      cidr           = var.management_instance_001_rdp_allowed_cidr
+      cidr           = var.local_public_IP
       cidr_type      = "CIDR_BLOCK"
       tcp_port_range = { min = 3389, max = 3389 }
+    },
+    {
+      description    = "Allow HTTPS only from the trusted public IP."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "0.0.0.0/0"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow HTTP only from the public internet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "0.0.0.0/0"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 80, max = 80 }
+    },
+    {
+      description = "Allow ICMP only from the trusted public IP."
+      direction   = "INGRESS"
+      protocol    = "1"
+      cidr        = var.local_public_IP
+      cidr_type   = "CIDR_BLOCK"
     },
     {
       description = "Allow all outbound traffic from the management instance."
