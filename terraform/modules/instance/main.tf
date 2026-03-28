@@ -19,6 +19,7 @@ resource "oci_core_instance" "this" {
     assign_public_ip = var.assign_public_ip
     hostname_label   = var.hostname_label
     nsg_ids          = var.nsg_ids
+    private_ip       = var.private_ip
     subnet_id        = var.subnet_id
   }
 

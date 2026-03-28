@@ -39,6 +39,12 @@ variable "subnet_id" {
   type        = string
 }
 
+variable "private_ip" {
+  description = "Optional fixed private IP address for the primary VNIC."
+  type        = string
+  default     = null
+}
+
 variable "assign_public_ip" {
   description = "Whether to assign a public IP to the primary VNIC."
   type        = bool

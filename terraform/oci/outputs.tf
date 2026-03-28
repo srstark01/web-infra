@@ -76,3 +76,23 @@ output "management_instance_001_nsg_id" {
   description = "OCID of the NSG attached to the management instance."
   value       = module.management_instance_001_nsg.id
 }
+
+output "staging_instance_001_id" {
+  description = "OCID of the staging instance."
+  value       = module.staging_instance.id
+}
+
+output "staging_instance_001_private_ip" {
+  description = "Primary private IP address of the staging instance."
+  value       = module.staging_instance.private_ip
+}
+
+output "staging_instance_001_public_ip" {
+  description = "Primary public IP address of the staging instance, if assigned."
+  value       = module.staging_instance.public_ip
+}
+
+output "staging_instance_001_nsg_id" {
+  description = "OCID of the NSG attached to the staging instance."
+  value       = module.staging_instance_001_nsg.id
+}

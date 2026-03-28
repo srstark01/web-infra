@@ -126,6 +126,26 @@ variable "management_ssh_authorized_keys_path" {
   type        = string
 }
 
+variable "management_instance_001_private_ip_last_octet" {
+  description = "Host octet to use when assigning the fixed private IP for mgmt-001 within the public subnet."
+  type        = number
+
+  validation {
+    condition     = var.management_instance_001_private_ip_last_octet >= 1 && var.management_instance_001_private_ip_last_octet <= 254
+    error_message = "management_instance_001_private_ip_last_octet must be between 1 and 254."
+  }
+}
+
+variable "staging_instance_001_private_ip_last_octet" {
+  description = "Host octet to use when assigning the fixed private IP for stg-001 within the staging subnet."
+  type        = number
+
+  validation {
+    condition     = var.staging_instance_001_private_ip_last_octet >= 1 && var.staging_instance_001_private_ip_last_octet <= 254
+    error_message = "staging_instance_001_private_ip_last_octet must be between 1 and 254."
+  }
+}
+
 variable "local_public_IP" {
   description = "Trusted public CIDR allowed to reach the management instance."
   type        = string

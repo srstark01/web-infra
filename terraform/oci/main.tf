@@ -15,6 +15,16 @@ locals {
   vcn_dns_label                    = substr(var.environment_name, 0, 15)
   management_instance_001_name     = "${local.environment_compartment_name}-mgmt-001"
   management_instance_001_nsg_name = "${local.environment_compartment_name}-mgmt-001-nsg"
+  staging_instance_001_name        = "${local.environment_compartment_name}-stg-001"
+  staging_instance_001_nsg_name    = "${local.environment_compartment_name}-stg-001-nsg"
+  management_instance_001_private_ip = cidrhost(
+    var.public_subnet_cidr_block,
+    var.management_instance_001_private_ip_last_octet,
+  )
+  staging_instance_001_private_ip = cidrhost(
+    var.app_staging_subnet_cidr_block,
+    var.staging_instance_001_private_ip_last_octet,
+  )
 }
 
 // When parent_compartment_id is not passed directly, read the shared
@@ -134,9 +144,75 @@ module "management_instance" {
     memory_in_gbs = var.management_shape_memory_in_gbs
   } : null
   subnet_id               = module.environment_network.public_subnet_id
+  private_ip              = local.management_instance_001_private_ip
   assign_public_ip        = true
   hostname_label          = "mgmt-001"
   nsg_ids                 = [module.management_instance_001_nsg.id]
+  ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
+  image_id                = data.oci_core_images.management.images[0].id
+  boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
+}
+
+module "staging_instance_001_nsg" {
+  source = "../modules/nsg"
+
+  compartment_id = module.environment_compartment.id
+  vcn_id         = module.environment_network.vcn_id
+  display_name   = local.staging_instance_001_nsg_name
+  rules = [
+    {
+      description    = "Allow SSH from mgmt-001."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "${local.management_instance_001_private_ip}/32"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 22, max = 22 }
+    },
+    {
+      description    = "Allow HTTP from mgmt-001."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "${local.management_instance_001_private_ip}/32"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 80, max = 80 }
+    },
+    {
+      description    = "Allow HTTPS from mgmt-001."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "${local.management_instance_001_private_ip}/32"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description = "Allow all outbound traffic from the staging instance."
+      direction   = "EGRESS"
+      protocol    = "all"
+      cidr        = "0.0.0.0/0"
+      cidr_type   = "CIDR_BLOCK"
+    }
+  ]
+}
+
+module "staging_instance" {
+  source = "../modules/instance"
+
+  availability_domain = coalesce(
+    var.management_availability_domain,
+    data.oci_identity_availability_domains.environment.availability_domains[0].name,
+  )
+  compartment_id = module.environment_compartment.id
+  display_name   = local.staging_instance_001_name
+  shape          = var.management_shape
+  shape_config = can(regex("Flex$", var.management_shape)) ? {
+    ocpus         = var.management_shape_ocpus
+    memory_in_gbs = var.management_shape_memory_in_gbs
+  } : null
+  subnet_id               = module.environment_network.app_staging_subnet_id
+  private_ip              = local.staging_instance_001_private_ip
+  assign_public_ip        = false
+  hostname_label          = "stg-001"
+  nsg_ids                 = [module.staging_instance_001_nsg.id]
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
