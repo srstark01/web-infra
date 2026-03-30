@@ -96,3 +96,18 @@ output "staging_instance_001_nsg_id" {
   description = "OCID of the NSG attached to the staging instance."
   value       = module.staging_instance_001_nsg.id
 }
+
+output "staging_load_balancer_id" {
+  description = "OCID of the staging load balancer."
+  value       = module.staging_load_balancer.id
+}
+
+output "staging_load_balancer_public_ips" {
+  description = "Public IP addresses assigned to the staging load balancer."
+  value       = module.staging_load_balancer.public_ips
+}
+
+output "staging_load_balancer_nsg_id" {
+  description = "OCID of the NSG attached to the staging load balancer."
+  value       = module.staging_load_balancer_nsg.id
+}

@@ -17,6 +17,12 @@ locals {
   management_instance_001_nsg_name = "${local.environment_compartment_name}-mgmt-001-nsg"
   staging_instance_001_name        = "${local.environment_compartment_name}-stg-001"
   staging_instance_001_nsg_name    = "${local.environment_compartment_name}-stg-001-nsg"
+  staging_load_balancer_name       = "${local.environment_compartment_name}-stg-lb-001"
+  staging_load_balancer_nsg_name   = "${local.environment_compartment_name}-stg-lb-001-nsg"
+  staging_https_certificate_name   = "staging-self-signed"
+  staging_http_redirect_rule_set   = "http_to_https"
+  staging_primary_backend_set_name = "stage_abidex_org_bs"
+  staging_alt_backend_set_name     = "stage_shawnstark_net_bs"
   management_instance_001_private_ip = cidrhost(
     var.public_subnet_cidr_block,
     var.management_instance_001_private_ip_last_octet,
@@ -169,20 +175,20 @@ module "staging_instance_001_nsg" {
       tcp_port_range = { min = 22, max = 22 }
     },
     {
-      description    = "Allow HTTP from mgmt-001."
+      description    = "Allow HTTPS from the pub subnet."
       direction      = "INGRESS"
       protocol       = "6"
-      cidr           = "${local.management_instance_001_private_ip}/32"
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 80, max = 80 }
-    },
-    {
-      description    = "Allow HTTPS from mgmt-001."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = "${local.management_instance_001_private_ip}/32"
+      cidr           = var.public_subnet_cidr_block
       cidr_type      = "CIDR_BLOCK"
       tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS from the pub subnet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = var.public_subnet_cidr_block
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 8443, max = 8443 }
     },
     {
       description = "Allow all outbound traffic from the staging instance."
@@ -216,4 +222,71 @@ module "staging_instance" {
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
+}
+
+module "staging_load_balancer_nsg" {
+  source = "../modules/nsg"
+
+  compartment_id = module.environment_compartment.id
+  vcn_id         = module.environment_network.vcn_id
+  display_name   = local.staging_load_balancer_nsg_name
+  rules = [
+    {
+      description    = "Allow HTTP from the public internet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "0.0.0.0/0"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 80, max = 80 }
+    },
+    {
+      description    = "Allow HTTPS from the public internet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      cidr           = "0.0.0.0/0"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow HTTPS to stg-001."
+      direction      = "EGRESS"
+      protocol       = "6"
+      cidr           = "${local.staging_instance_001_private_ip}/32"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS to stg-001."
+      direction      = "EGRESS"
+      protocol       = "6"
+      cidr           = "${local.staging_instance_001_private_ip}/32"
+      cidr_type      = "CIDR_BLOCK"
+      tcp_port_range = { min = 8443, max = 8443 }
+    }
+  ]
+}
+
+module "staging_load_balancer" {
+  source = "../modules/load-balancer"
+
+  compartment_id                  = module.environment_compartment.id
+  display_name                    = local.staging_load_balancer_name
+  subnet_ids                      = [module.environment_network.public_subnet_id]
+  network_security_group_ids      = [module.staging_load_balancer_nsg.id]
+  shape                           = var.staging_load_balancer_shape
+  minimum_bandwidth_in_mbps       = var.staging_load_balancer_min_bandwidth_mbps
+  maximum_bandwidth_in_mbps       = var.staging_load_balancer_max_bandwidth_mbps
+  certificate_name                = local.staging_https_certificate_name
+  primary_hostname                = var.stage_abidex_org_hostname
+  alternate_hostname              = var.stage_shawnstark_net_hostname
+  primary_hostname_name           = "stage_abidex_org"
+  alternate_hostname_name         = "stage_shawnstark_net"
+  http_redirect_rule_set_name     = local.staging_http_redirect_rule_set
+  primary_backend_set_name        = local.staging_primary_backend_set_name
+  alternate_backend_set_name      = local.staging_alt_backend_set_name
+  backend_ip_address              = module.staging_instance.private_ip
+  primary_backend_port            = 443
+  alternate_backend_port          = 8443
+  health_check_path               = var.staging_load_balancer_health_check_path
+  verify_backend_peer_certificate = false
 }

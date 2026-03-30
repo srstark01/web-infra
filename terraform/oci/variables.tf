@@ -150,3 +150,39 @@ variable "local_public_IP" {
   description = "Trusted public CIDR allowed to reach the management instance."
   type        = string
 }
+
+variable "stage_abidex_org_hostname" {
+  description = "Hostname served by the staging load balancer for the primary staging site."
+  type        = string
+  default     = "stage.abidex.org"
+}
+
+variable "stage_shawnstark_net_hostname" {
+  description = "Hostname served by the staging load balancer for the secondary staging site."
+  type        = string
+  default     = "stage.shawnstark.net"
+}
+
+variable "staging_load_balancer_shape" {
+  description = "OCI shape for the staging load balancer."
+  type        = string
+  default     = "flexible"
+}
+
+variable "staging_load_balancer_min_bandwidth_mbps" {
+  description = "Minimum bandwidth in Mbps for the flexible staging load balancer."
+  type        = number
+  default     = 10
+}
+
+variable "staging_load_balancer_max_bandwidth_mbps" {
+  description = "Maximum bandwidth in Mbps for the flexible staging load balancer."
+  type        = number
+  default     = 10
+}
+
+variable "staging_load_balancer_health_check_path" {
+  description = "HTTPS health check path used by the staging load balancer backends."
+  type        = string
+  default     = "/home"
+}
