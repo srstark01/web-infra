@@ -1,12 +1,17 @@
 // Reusable OCI load balancer building block for public HTTPS endpoints.
+
 resource "tls_private_key" "this" {
+  count = 1
+
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
 resource "tls_self_signed_cert" "this" {
-  private_key_pem       = tls_private_key.this.private_key_pem
-  validity_period_hours = var.certificate_validity_period_hours
+  count = 1
+
+  private_key_pem       = tls_private_key.this[0].private_key_pem
+  validity_period_hours = var.bootstrap_certificate_validity_period_hours
   allowed_uses = [
     "digital_signature",
     "key_encipherment",
@@ -15,7 +20,7 @@ resource "tls_self_signed_cert" "this" {
 
   subject {
     common_name  = var.primary_hostname
-    organization = var.certificate_organization
+    organization = var.bootstrap_certificate_organization
   }
 
   dns_names = [
@@ -39,10 +44,12 @@ resource "oci_load_balancer_load_balancer" "this" {
 }
 
 resource "oci_load_balancer_certificate" "this" {
+  count = 1
+
   load_balancer_id   = oci_load_balancer_load_balancer.this.id
-  certificate_name   = var.certificate_name
-  public_certificate = tls_self_signed_cert.this.cert_pem
-  private_key        = tls_private_key.this.private_key_pem
+  certificate_name   = var.bootstrap_certificate_name
+  public_certificate = tls_self_signed_cert.this[0].cert_pem
+  private_key        = tls_private_key.this[0].private_key_pem
 }
 
 resource "oci_load_balancer_backend_set" "primary" {
@@ -168,8 +175,12 @@ resource "oci_load_balancer_listener" "primary_https" {
   port                     = 443
   protocol                 = "HTTP"
 
+  lifecycle {
+    ignore_changes = [ssl_configuration]
+  }
+
   ssl_configuration {
-    certificate_name        = oci_load_balancer_certificate.this.certificate_name
+    certificate_name        = oci_load_balancer_certificate.this[0].certificate_name
     verify_peer_certificate = false
   }
 }
@@ -182,8 +193,12 @@ resource "oci_load_balancer_listener" "alternate_https" {
   port                     = 443
   protocol                 = "HTTP"
 
+  lifecycle {
+    ignore_changes = [ssl_configuration]
+  }
+
   ssl_configuration {
-    certificate_name        = oci_load_balancer_certificate.this.certificate_name
+    certificate_name        = oci_load_balancer_certificate.this[0].certificate_name
     verify_peer_certificate = false
   }
 }

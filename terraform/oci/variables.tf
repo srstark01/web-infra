@@ -186,3 +186,20 @@ variable "staging_load_balancer_health_check_path" {
   type        = string
   default     = "/home"
 }
+
+variable "staging_load_balancer_certificate_name" {
+  description = "Existing certificate name to bind to the staging load balancer HTTPS listeners."
+  type        = string
+  default     = "staging_live_cert"
+}
+
+variable "staging_load_balancer_certificate_mode" {
+  description = "Certificate mode for the staging LB: bootstrap uses a temporary self-signed cert, external uses an existing OCI LB cert bundle, and auto prefers the external cert when present and otherwise falls back to bootstrap."
+  type        = string
+  default     = "auto"
+
+  validation {
+    condition     = contains(["bootstrap", "external", "auto"], var.staging_load_balancer_certificate_mode)
+    error_message = "staging_load_balancer_certificate_mode must be one of \"bootstrap\", \"external\", or \"auto\"."
+  }
+}

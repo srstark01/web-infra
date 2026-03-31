@@ -19,7 +19,6 @@ locals {
   staging_instance_001_nsg_name    = "${local.environment_compartment_name}-stg-001-nsg"
   staging_load_balancer_name       = "${local.environment_compartment_name}-stg-lb-001"
   staging_load_balancer_nsg_name   = "${local.environment_compartment_name}-stg-lb-001-nsg"
-  staging_https_certificate_name   = "staging-self-signed"
   staging_http_redirect_rule_set   = "http_to_https"
   staging_primary_backend_set_name = "stage_abidex_org_bs"
   staging_alt_backend_set_name     = "stage_shawnstark_net_bs"
@@ -276,7 +275,8 @@ module "staging_load_balancer" {
   shape                           = var.staging_load_balancer_shape
   minimum_bandwidth_in_mbps       = var.staging_load_balancer_min_bandwidth_mbps
   maximum_bandwidth_in_mbps       = var.staging_load_balancer_max_bandwidth_mbps
-  certificate_name                = local.staging_https_certificate_name
+  certificate_mode                = var.staging_load_balancer_certificate_mode
+  certificate_name                = var.staging_load_balancer_certificate_name
   primary_hostname                = var.stage_abidex_org_hostname
   alternate_hostname              = var.stage_shawnstark_net_hostname
   primary_hostname_name           = "stage_abidex_org"

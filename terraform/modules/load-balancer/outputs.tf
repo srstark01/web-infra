@@ -11,5 +11,5 @@ output "public_ips" {
 
 output "certificate_name" {
   description = "Certificate name attached to the load balancer."
-  value       = oci_load_balancer_certificate.this.certificate_name
+  value       = oci_load_balancer_certificate.this[0].certificate_name
 }

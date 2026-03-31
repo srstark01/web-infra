@@ -45,18 +45,35 @@ variable "is_private" {
 }
 
 variable "certificate_name" {
-  description = "Certificate name as stored on the load balancer."
+  description = "Existing certificate name already present on the load balancer."
   type        = string
 }
 
-variable "certificate_organization" {
-  description = "Organization value embedded in the temporary self-signed certificate subject."
+variable "certificate_mode" {
+  description = "Certificate source mode for HTTPS listeners: bootstrap creates a temporary self-signed cert, external expects an existing OCI LB certificate bundle, and auto prefers the external cert when present and otherwise falls back to bootstrap."
+  type        = string
+  default     = "auto"
+
+  validation {
+    condition     = contains(["bootstrap", "external", "auto"], var.certificate_mode)
+    error_message = "certificate_mode must be one of \"bootstrap\", \"external\", or \"auto\"."
+  }
+}
+
+variable "bootstrap_certificate_name" {
+  description = "Certificate name to use for the temporary bootstrap self-signed certificate."
+  type        = string
+  default     = "staging-self-signed"
+}
+
+variable "bootstrap_certificate_organization" {
+  description = "Organization value embedded in the temporary bootstrap self-signed certificate subject."
   type        = string
   default     = "web-infra"
 }
 
-variable "certificate_validity_period_hours" {
-  description = "Validity period for the temporary self-signed certificate."
+variable "bootstrap_certificate_validity_period_hours" {
+  description = "Validity period for the temporary bootstrap self-signed certificate."
   type        = number
   default     = 8760
 }
