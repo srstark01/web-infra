@@ -19,14 +19,11 @@ resource "tls_self_signed_cert" "this" {
   ]
 
   subject {
-    common_name  = var.primary_hostname
+    common_name  = var.listeners[0].hostname
     organization = var.bootstrap_certificate_organization
   }
 
-  dns_names = [
-    var.primary_hostname,
-    var.alternate_hostname,
-  ]
+  dns_names = [for listener in var.listeners : listener.hostname]
 }
 
 resource "oci_load_balancer_load_balancer" "this" {
@@ -52,15 +49,19 @@ resource "oci_load_balancer_certificate" "this" {
   private_key        = tls_private_key.this[0].private_key_pem
 }
 
-resource "oci_load_balancer_backend_set" "primary" {
+resource "oci_load_balancer_backend_set" "this" {
+  for_each = {
+    for backend_set in var.backend_sets : backend_set.name => backend_set
+  }
+
   load_balancer_id = oci_load_balancer_load_balancer.this.id
-  name             = var.primary_backend_set_name
+  name             = each.value.name
   policy           = var.backend_policy
 
   health_checker {
     protocol            = "HTTP"
     is_force_plain_text = var.health_check_force_plain_text
-    port                = var.primary_backend_port
+    port                = each.value.port
     url_path            = var.health_check_path
     return_code         = var.health_check_return_code
     retries             = var.health_check_retries
@@ -77,55 +78,41 @@ resource "oci_load_balancer_backend_set" "primary" {
   }
 }
 
-resource "oci_load_balancer_backend_set" "alternate" {
-  load_balancer_id = oci_load_balancer_load_balancer.this.id
-  name             = var.alternate_backend_set_name
-  policy           = var.backend_policy
-
-  health_checker {
-    protocol            = "HTTP"
-    is_force_plain_text = var.health_check_force_plain_text
-    port                = var.alternate_backend_port
-    url_path            = var.health_check_path
-    return_code         = var.health_check_return_code
-    retries             = var.health_check_retries
-    interval_ms         = var.health_check_interval_ms
-    timeout_in_millis   = var.health_check_timeout_in_millis
+locals {
+  backend_set_names = {
+    for backend_set_name, backend_set in oci_load_balancer_backend_set.this :
+    backend_set_name => backend_set.name
   }
+}
 
-  dynamic "ssl_configuration" {
-    for_each = var.enable_backend_ssl ? [1] : []
-
-    content {
-      verify_peer_certificate = var.verify_backend_peer_certificate
+resource "oci_load_balancer_backend" "this" {
+  for_each = merge([
+    for backend_set_index, backend_set in var.backend_sets : {
+      for backend_ip_index, backend_ip in backend_set.backend_ips :
+      "${backend_set_index}:${backend_ip_index}" => {
+        backend_set_name = backend_set.name
+        ip_address       = backend_ip
+        port             = backend_set.port
+      }
     }
+  ]...)
+
+  load_balancer_id = oci_load_balancer_load_balancer.this.id
+  backendset_name  = local.backend_set_names[each.value.backend_set_name]
+  ip_address       = each.value.ip_address
+  port             = each.value.port
+
+  depends_on = [oci_load_balancer_backend_set.this]
+}
+
+resource "oci_load_balancer_hostname" "this" {
+  for_each = {
+    for listener in var.listeners : listener.name => listener
   }
-}
 
-resource "oci_load_balancer_backend" "primary" {
   load_balancer_id = oci_load_balancer_load_balancer.this.id
-  backendset_name  = oci_load_balancer_backend_set.primary.name
-  ip_address       = var.backend_ip_address
-  port             = var.primary_backend_port
-}
-
-resource "oci_load_balancer_backend" "alternate" {
-  load_balancer_id = oci_load_balancer_load_balancer.this.id
-  backendset_name  = oci_load_balancer_backend_set.alternate.name
-  ip_address       = var.backend_ip_address
-  port             = var.alternate_backend_port
-}
-
-resource "oci_load_balancer_hostname" "primary" {
-  load_balancer_id = oci_load_balancer_load_balancer.this.id
-  name             = var.primary_hostname_name
-  hostname         = var.primary_hostname
-}
-
-resource "oci_load_balancer_hostname" "alternate" {
-  load_balancer_id = oci_load_balancer_load_balancer.this.id
-  name             = var.alternate_hostname_name
-  hostname         = var.alternate_hostname
+  name             = each.value.name
+  hostname         = each.value.hostname
 }
 
 resource "oci_load_balancer_rule_set" "http_redirect" {
@@ -161,35 +148,21 @@ resource "oci_load_balancer_rule_set" "http_redirect" {
 resource "oci_load_balancer_listener" "http" {
   load_balancer_id         = oci_load_balancer_load_balancer.this.id
   name                     = "http"
-  default_backend_set_name = oci_load_balancer_backend_set.primary.name
+  default_backend_set_name = local.backend_set_names[var.http_default_backend_set_name]
   port                     = 80
   protocol                 = "HTTP"
   rule_set_names           = [oci_load_balancer_rule_set.http_redirect.name]
 }
 
-resource "oci_load_balancer_listener" "primary_https" {
-  load_balancer_id         = oci_load_balancer_load_balancer.this.id
-  name                     = "https-${var.primary_hostname_name}"
-  default_backend_set_name = oci_load_balancer_backend_set.primary.name
-  hostname_names           = [oci_load_balancer_hostname.primary.name]
-  port                     = 443
-  protocol                 = "HTTP"
-
-  lifecycle {
-    ignore_changes = [ssl_configuration]
+resource "oci_load_balancer_listener" "https" {
+  for_each = {
+    for listener in var.listeners : listener.name => listener
   }
 
-  ssl_configuration {
-    certificate_name        = oci_load_balancer_certificate.this[0].certificate_name
-    verify_peer_certificate = false
-  }
-}
-
-resource "oci_load_balancer_listener" "alternate_https" {
   load_balancer_id         = oci_load_balancer_load_balancer.this.id
-  name                     = "https-${var.alternate_hostname_name}"
-  default_backend_set_name = oci_load_balancer_backend_set.alternate.name
-  hostname_names           = [oci_load_balancer_hostname.alternate.name]
+  name                     = "https-${each.value.name}"
+  default_backend_set_name = local.backend_set_names[each.value.backend_set_name]
+  hostname_names           = [oci_load_balancer_hostname.this[each.key].name]
   port                     = 443
   protocol                 = "HTTP"
 

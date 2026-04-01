@@ -146,6 +146,26 @@ variable "staging_instance_001_private_ip_last_octet" {
   }
 }
 
+variable "app_instance_001_private_ip_last_octet" {
+  description = "Host octet to use when assigning the fixed private IP for app-001 within the production subnet."
+  type        = number
+
+  validation {
+    condition     = var.app_instance_001_private_ip_last_octet >= 1 && var.app_instance_001_private_ip_last_octet <= 254
+    error_message = "app_instance_001_private_ip_last_octet must be between 1 and 254."
+  }
+}
+
+variable "app_instance_002_private_ip_last_octet" {
+  description = "Host octet to use when assigning the fixed private IP for app-002 within the production subnet."
+  type        = number
+
+  validation {
+    condition     = var.app_instance_002_private_ip_last_octet >= 1 && var.app_instance_002_private_ip_last_octet <= 254
+    error_message = "app_instance_002_private_ip_last_octet must be between 1 and 254."
+  }
+}
+
 variable "local_public_IP" {
   description = "Trusted public CIDR allowed to reach the management instance."
   type        = string
@@ -163,43 +183,55 @@ variable "stage_shawnstark_net_hostname" {
   default     = "stage.shawnstark.net"
 }
 
-variable "staging_load_balancer_shape" {
+variable "abidex_org_hostname" {
+  description = "Hostname served by the load balancer for the primary production site."
+  type        = string
+  default     = "abidex.org"
+}
+
+variable "shawnstark_net_hostname" {
+  description = "Hostname served by the load balancer for the secondary production site."
+  type        = string
+  default     = "shawnstark.net"
+}
+
+variable "load_balancer_shape" {
   description = "OCI shape for the staging load balancer."
   type        = string
   default     = "flexible"
 }
 
-variable "staging_load_balancer_min_bandwidth_mbps" {
+variable "load_balancer_min_bandwidth_mbps" {
   description = "Minimum bandwidth in Mbps for the flexible staging load balancer."
   type        = number
   default     = 10
 }
 
-variable "staging_load_balancer_max_bandwidth_mbps" {
+variable "load_balancer_max_bandwidth_mbps" {
   description = "Maximum bandwidth in Mbps for the flexible staging load balancer."
   type        = number
   default     = 10
 }
 
-variable "staging_load_balancer_health_check_path" {
+variable "load_balancer_health_check_path" {
   description = "HTTPS health check path used by the staging load balancer backends."
   type        = string
   default     = "/home"
 }
 
-variable "staging_load_balancer_certificate_name" {
+variable "load_balancer_certificate_name" {
   description = "Existing certificate name to bind to the staging load balancer HTTPS listeners."
   type        = string
   default     = "staging_live_cert"
 }
 
-variable "staging_load_balancer_certificate_mode" {
+variable "load_balancer_certificate_mode" {
   description = "Certificate mode for the staging LB: bootstrap uses a temporary self-signed cert, external uses an existing OCI LB cert bundle, and auto prefers the external cert when present and otherwise falls back to bootstrap."
   type        = string
   default     = "auto"
 
   validation {
-    condition     = contains(["bootstrap", "external", "auto"], var.staging_load_balancer_certificate_mode)
-    error_message = "staging_load_balancer_certificate_mode must be one of \"bootstrap\", \"external\", or \"auto\"."
+    condition     = contains(["bootstrap", "external", "auto"], var.load_balancer_certificate_mode)
+    error_message = "load_balancer_certificate_mode must be one of \"bootstrap\", \"external\", or \"auto\"."
   }
 }

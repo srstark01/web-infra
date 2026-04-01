@@ -78,38 +78,8 @@ variable "bootstrap_certificate_validity_period_hours" {
   default     = 8760
 }
 
-variable "primary_hostname" {
-  description = "Primary hostname served on HTTPS."
-  type        = string
-}
-
-variable "alternate_hostname" {
-  description = "Alternate hostname served on HTTPS."
-  type        = string
-}
-
-variable "primary_hostname_name" {
-  description = "Internal OCI hostname resource name for the primary hostname."
-  type        = string
-}
-
-variable "alternate_hostname_name" {
-  description = "Internal OCI hostname resource name for the alternate hostname."
-  type        = string
-}
-
 variable "http_redirect_rule_set_name" {
   description = "Name of the HTTP-to-HTTPS redirect rule set."
-  type        = string
-}
-
-variable "primary_backend_set_name" {
-  description = "Name of the primary backend set."
-  type        = string
-}
-
-variable "alternate_backend_set_name" {
-  description = "Name of the alternate backend set."
   type        = string
 }
 
@@ -119,19 +89,27 @@ variable "backend_policy" {
   default     = "ROUND_ROBIN"
 }
 
-variable "backend_ip_address" {
-  description = "Backend private IP address."
+variable "backend_sets" {
+  description = "Backend sets to create, including their listener port and backend IP addresses."
+  type = list(object({
+    name        = string
+    port        = number
+    backend_ips = list(string)
+  }))
+}
+
+variable "listeners" {
+  description = "Hostname-based HTTPS listeners and the backend set each should route to."
+  type = list(object({
+    name             = string
+    hostname         = string
+    backend_set_name = string
+  }))
+}
+
+variable "http_default_backend_set_name" {
+  description = "Backend set used as the HTTP listener default before redirect rules are applied."
   type        = string
-}
-
-variable "primary_backend_port" {
-  description = "Backend port for the primary hostname."
-  type        = number
-}
-
-variable "alternate_backend_port" {
-  description = "Backend port for the alternate hostname."
-  type        = number
 }
 
 variable "health_check_path" {

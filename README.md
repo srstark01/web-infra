@@ -57,14 +57,14 @@ Certificate lifecycle is intentionally not managed in Terraform. Terraform only 
     - `stage.abidex.org` -> backend set on `stg-001:443`
     - `stage.shawnstark.net` -> backend set on `stg-001:8443`
   - health checks both backends on `/home`
-  - expects an existing OCI LB certificate bundle named by `staging_load_balancer_certificate_name`
+  - expects an existing OCI LB certificate bundle named by `load_balancer_certificate_name`
 
 **Important Certificates Note**
 
 Terraform does not create the load balancer certificate bundle. The LB listeners are configured to use an existing OCI LB certificate bundle name, which defaults to:
 
 ```hcl
-staging_load_balancer_certificate_name = "staging_live_cert"
+load_balancer_certificate_name = "staging_live_cert"
 ```
 
 That means the certificate bundle must already exist on the OCI load balancer before the HTTPS listeners can be applied successfully.
@@ -181,7 +181,7 @@ Examples:
 ```bash
 terraform -chdir=terraform/oci output management_instance_001_public_ip
 terraform -chdir=terraform/oci output staging_instance_001_private_ip
-terraform -chdir=terraform/oci output staging_load_balancer_public_ips
+terraform -chdir=terraform/oci output load_balancer_public_ips
 ```
 
 **SSH Access Model**

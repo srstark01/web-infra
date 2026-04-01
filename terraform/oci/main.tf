@@ -14,14 +14,19 @@ locals {
   network_name_prefix              = "${local.environment_compartment_name}-network"
   vcn_dns_label                    = substr(var.environment_name, 0, 15)
   management_instance_001_name     = "${local.environment_compartment_name}-mgmt-001"
-  management_instance_001_nsg_name = "${local.environment_compartment_name}-mgmt-001-nsg"
+  mgmt_instances_nsg_name          = "${local.environment_compartment_name}-mgmt-001-nsg"
   staging_instance_001_name        = "${local.environment_compartment_name}-stg-001"
-  staging_instance_001_nsg_name    = "${local.environment_compartment_name}-stg-001-nsg"
-  staging_load_balancer_name       = "${local.environment_compartment_name}-stg-lb-001"
-  staging_load_balancer_nsg_name   = "${local.environment_compartment_name}-stg-lb-001-nsg"
+  stg_instances_nsg_name           = "${local.environment_compartment_name}-stg-001-nsg"
+  app_instance_001_name            = "${local.environment_compartment_name}-app-001"
+  app_instances_nsg_name           = "${local.environment_compartment_name}-app-nodes-nsg"
+  app_instance_002_name            = "${local.environment_compartment_name}-app-002"
+  load_balancer_name               = "${local.environment_compartment_name}-stg-lb-001"
+  load_balancer_nsg_name           = "${local.environment_compartment_name}-stg-lb-001-nsg"
   staging_http_redirect_rule_set   = "http_to_https"
   staging_primary_backend_set_name = "stage_abidex_org_bs"
   staging_alt_backend_set_name     = "stage_shawnstark_net_bs"
+  prod_primary_backend_set_name    = "abidex_org_bs"
+  prod_alt_backend_set_name        = "shawnstark_net_bs"
   management_instance_001_private_ip = cidrhost(
     var.public_subnet_cidr_block,
     var.management_instance_001_private_ip_last_octet,
@@ -30,6 +35,34 @@ locals {
     var.app_staging_subnet_cidr_block,
     var.staging_instance_001_private_ip_last_octet,
   )
+  app_instance_001_private_ip = cidrhost(
+    var.app_prod_subnet_cidr_block,
+    var.app_instance_001_private_ip_last_octet,
+  )
+  app_instance_002_private_ip = cidrhost(
+    var.app_prod_subnet_cidr_block,
+    var.app_instance_002_private_ip_last_octet,
+  )
+}
+
+moved {
+  from = module.management_instance_001_nsg
+  to   = module.mgmt_instances_nsg
+}
+
+moved {
+  from = module.staging_instance_001_nsg
+  to   = module.stg_instances_nsg
+}
+
+moved {
+  from = module.staging_load_balancer_nsg
+  to   = module.load_balancer_nsg
+}
+
+moved {
+  from = module.staging_load_balancer
+  to   = module.load_balancer
 }
 
 // When parent_compartment_id is not passed directly, read the shared
@@ -78,60 +111,12 @@ module "environment_network" {
   app_prod_subnet_cidr_block    = var.app_prod_subnet_cidr_block
 }
 
-module "management_instance_001_nsg" {
+module "mgmt_instances_nsg" {
   source = "../modules/nsg"
 
   compartment_id = module.environment_compartment.id
   vcn_id         = module.environment_network.vcn_id
-  display_name   = local.management_instance_001_nsg_name
-  rules = [
-    {
-      description    = "Allow SSH only from the trusted public IP."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = var.local_public_IP
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 22, max = 22 }
-    },
-    {
-      description    = "Allow RDP only from the trusted public IP."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = var.local_public_IP
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 3389, max = 3389 }
-    },
-    {
-      description    = "Allow HTTPS only from the trusted public IP."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = "0.0.0.0/0"
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 443, max = 443 }
-    },
-    {
-      description    = "Allow HTTP only from the public internet."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = "0.0.0.0/0"
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 80, max = 80 }
-    },
-    {
-      description = "Allow ICMP only from the trusted public IP."
-      direction   = "INGRESS"
-      protocol    = "1"
-      cidr        = var.local_public_IP
-      cidr_type   = "CIDR_BLOCK"
-    },
-    {
-      description = "Allow all outbound traffic from the management instance."
-      direction   = "EGRESS"
-      protocol    = "all"
-      cidr        = "0.0.0.0/0"
-      cidr_type   = "CIDR_BLOCK"
-    }
-  ]
+  display_name   = local.mgmt_instances_nsg_name
 }
 
 module "management_instance" {
@@ -152,51 +137,18 @@ module "management_instance" {
   private_ip              = local.management_instance_001_private_ip
   assign_public_ip        = true
   hostname_label          = "mgmt-001"
-  nsg_ids                 = [module.management_instance_001_nsg.id]
+  nsg_ids                 = [module.mgmt_instances_nsg.id]
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
 }
 
-module "staging_instance_001_nsg" {
+module "stg_instances_nsg" {
   source = "../modules/nsg"
 
   compartment_id = module.environment_compartment.id
   vcn_id         = module.environment_network.vcn_id
-  display_name   = local.staging_instance_001_nsg_name
-  rules = [
-    {
-      description    = "Allow SSH from mgmt-001."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = "${local.management_instance_001_private_ip}/32"
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 22, max = 22 }
-    },
-    {
-      description    = "Allow HTTPS from the pub subnet."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = var.public_subnet_cidr_block
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 443, max = 443 }
-    },
-    {
-      description    = "Allow alternate HTTPS from the pub subnet."
-      direction      = "INGRESS"
-      protocol       = "6"
-      cidr           = var.public_subnet_cidr_block
-      cidr_type      = "CIDR_BLOCK"
-      tcp_port_range = { min = 8443, max = 8443 }
-    },
-    {
-      description = "Allow all outbound traffic from the staging instance."
-      direction   = "EGRESS"
-      protocol    = "all"
-      cidr        = "0.0.0.0/0"
-      cidr_type   = "CIDR_BLOCK"
-    }
-  ]
+  display_name   = local.stg_instances_nsg_name
 }
 
 module "staging_instance" {
@@ -217,76 +169,354 @@ module "staging_instance" {
   private_ip              = local.staging_instance_001_private_ip
   assign_public_ip        = false
   hostname_label          = "stg-001"
-  nsg_ids                 = [module.staging_instance_001_nsg.id]
+  nsg_ids                 = [module.stg_instances_nsg.id]
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
 }
 
-module "staging_load_balancer_nsg" {
+module "app_instances_nsg" {
   source = "../modules/nsg"
 
   compartment_id = module.environment_compartment.id
   vcn_id         = module.environment_network.vcn_id
-  display_name   = local.staging_load_balancer_nsg_name
+  display_name   = local.app_instances_nsg_name
+}
+
+module "app_instance_001" {
+  source = "../modules/instance"
+
+  availability_domain = coalesce(
+    var.management_availability_domain,
+    data.oci_identity_availability_domains.environment.availability_domains[0].name,
+  )
+  compartment_id = module.environment_compartment.id
+  display_name   = local.app_instance_001_name
+  shape          = var.management_shape
+  shape_config = can(regex("Flex$", var.management_shape)) ? {
+    ocpus         = var.management_shape_ocpus
+    memory_in_gbs = var.management_shape_memory_in_gbs
+  } : null
+  subnet_id               = module.environment_network.app_prod_subnet_id
+  private_ip              = local.app_instance_001_private_ip
+  assign_public_ip        = false
+  hostname_label          = "app-001"
+  nsg_ids                 = [module.app_instances_nsg.id]
+  ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
+  image_id                = data.oci_core_images.management.images[0].id
+  boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
+}
+
+module "app_instance_002" {
+  source = "../modules/instance"
+
+  availability_domain = coalesce(
+    var.management_availability_domain,
+    data.oci_identity_availability_domains.environment.availability_domains[0].name,
+  )
+  compartment_id = module.environment_compartment.id
+  display_name   = local.app_instance_002_name
+  shape          = var.management_shape
+  shape_config = can(regex("Flex$", var.management_shape)) ? {
+    ocpus         = var.management_shape_ocpus
+    memory_in_gbs = var.management_shape_memory_in_gbs
+  } : null
+  subnet_id               = module.environment_network.app_prod_subnet_id
+  private_ip              = local.app_instance_002_private_ip
+  assign_public_ip        = false
+  hostname_label          = "app-002"
+  nsg_ids                 = [module.app_instances_nsg.id]
+  ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
+  image_id                = data.oci_core_images.management.images[0].id
+  boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
+}
+
+module "load_balancer_nsg" {
+  source = "../modules/nsg"
+
+  compartment_id = module.environment_compartment.id
+  vcn_id         = module.environment_network.vcn_id
+  display_name   = local.load_balancer_nsg_name
+}
+
+module "mgmt_instances_nsg_rules" {
+  source = "../modules/nsg-rules"
+
+  network_security_group_id = module.mgmt_instances_nsg.id
+  rules = [
+    {
+      description    = "Allow SSH only from the trusted public IP."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = var.local_public_IP
+      target_type    = "CIDR_BLOCK"
+      tcp_port_range = { min = 22, max = 22 }
+    },
+    {
+      description    = "Allow RDP only from the trusted public IP."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = var.local_public_IP
+      target_type    = "CIDR_BLOCK"
+      tcp_port_range = { min = 3389, max = 3389 }
+    },
+    {
+      description    = "Allow HTTPS from the public internet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = "0.0.0.0/0"
+      target_type    = "CIDR_BLOCK"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow HTTP from the public internet."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = "0.0.0.0/0"
+      target_type    = "CIDR_BLOCK"
+      tcp_port_range = { min = 80, max = 80 }
+    },
+    {
+      description = "Allow ICMP only from the trusted public IP."
+      direction   = "INGRESS"
+      protocol    = "1"
+      target      = var.local_public_IP
+      target_type = "CIDR_BLOCK"
+    },
+    {
+      description = "Allow all outbound traffic from the management instance."
+      direction   = "EGRESS"
+      protocol    = "all"
+      target      = "0.0.0.0/0"
+      target_type = "CIDR_BLOCK"
+    }
+  ]
+}
+
+module "stg_instances_nsg_rules" {
+  source = "../modules/nsg-rules"
+
+  network_security_group_id = module.stg_instances_nsg.id
+  rules = [
+    {
+      description = "Allow all outbound traffic from the staging instance."
+      direction   = "EGRESS"
+      protocol    = "all"
+      target      = "0.0.0.0/0"
+      target_type = "CIDR_BLOCK"
+    },
+    {
+      description    = "Allow SSH from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 22, max = 22 }
+    },
+    {
+      description    = "Allow HTTPS from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 8443, max = 8443 }
+    },
+    {
+      description    = "Allow HTTPS from the load balancer NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.load_balancer_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS from the load balancer NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.load_balancer_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 8443, max = 8443 }
+    }
+  ]
+}
+
+module "app_instances_nsg_rules" {
+  source = "../modules/nsg-rules"
+
+  network_security_group_id = module.app_instances_nsg.id
+  rules = [
+    {
+      description = "Allow all outbound traffic from the app nodes."
+      direction   = "EGRESS"
+      protocol    = "all"
+      target      = "0.0.0.0/0"
+      target_type = "CIDR_BLOCK"
+    },
+    {
+      description    = "Allow SSH from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 22, max = 22 }
+    },
+    {
+      description    = "Allow HTTPS from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS from the management NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.mgmt_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 8443, max = 8443 }
+    },
+    {
+      description    = "Allow HTTPS from the load balancer NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.load_balancer_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS from the load balancer NSG."
+      direction      = "INGRESS"
+      protocol       = "6"
+      target         = module.load_balancer_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 8443, max = 8443 }
+    }
+  ]
+}
+
+module "load_balancer_nsg_rules" {
+  source = "../modules/nsg-rules"
+
+  network_security_group_id = module.load_balancer_nsg.id
   rules = [
     {
       description    = "Allow HTTP from the public internet."
       direction      = "INGRESS"
       protocol       = "6"
-      cidr           = "0.0.0.0/0"
-      cidr_type      = "CIDR_BLOCK"
+      target         = "0.0.0.0/0"
+      target_type    = "CIDR_BLOCK"
       tcp_port_range = { min = 80, max = 80 }
     },
     {
       description    = "Allow HTTPS from the public internet."
       direction      = "INGRESS"
       protocol       = "6"
-      cidr           = "0.0.0.0/0"
-      cidr_type      = "CIDR_BLOCK"
+      target         = "0.0.0.0/0"
+      target_type    = "CIDR_BLOCK"
       tcp_port_range = { min = 443, max = 443 }
     },
     {
-      description    = "Allow HTTPS to stg-001."
+      description    = "Allow HTTPS to the staging instance NSG."
       direction      = "EGRESS"
       protocol       = "6"
-      cidr           = "${local.staging_instance_001_private_ip}/32"
-      cidr_type      = "CIDR_BLOCK"
+      target         = module.stg_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
       tcp_port_range = { min = 443, max = 443 }
     },
     {
-      description    = "Allow alternate HTTPS to stg-001."
+      description    = "Allow alternate HTTPS to the staging instance NSG."
       direction      = "EGRESS"
       protocol       = "6"
-      cidr           = "${local.staging_instance_001_private_ip}/32"
-      cidr_type      = "CIDR_BLOCK"
+      target         = module.stg_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 8443, max = 8443 }
+    },
+    {
+      description    = "Allow HTTPS to the app instances NSG."
+      direction      = "EGRESS"
+      protocol       = "6"
+      target         = module.app_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
+      tcp_port_range = { min = 443, max = 443 }
+    },
+    {
+      description    = "Allow alternate HTTPS to the app instances NSG."
+      direction      = "EGRESS"
+      protocol       = "6"
+      target         = module.app_instances_nsg.id
+      target_type    = "NETWORK_SECURITY_GROUP"
       tcp_port_range = { min = 8443, max = 8443 }
     }
   ]
 }
 
-module "staging_load_balancer" {
+module "load_balancer" {
   source = "../modules/load-balancer"
 
-  compartment_id                  = module.environment_compartment.id
-  display_name                    = local.staging_load_balancer_name
-  subnet_ids                      = [module.environment_network.public_subnet_id]
-  network_security_group_ids      = [module.staging_load_balancer_nsg.id]
-  shape                           = var.staging_load_balancer_shape
-  minimum_bandwidth_in_mbps       = var.staging_load_balancer_min_bandwidth_mbps
-  maximum_bandwidth_in_mbps       = var.staging_load_balancer_max_bandwidth_mbps
-  certificate_mode                = var.staging_load_balancer_certificate_mode
-  certificate_name                = var.staging_load_balancer_certificate_name
-  primary_hostname                = var.stage_abidex_org_hostname
-  alternate_hostname              = var.stage_shawnstark_net_hostname
-  primary_hostname_name           = "stage_abidex_org"
-  alternate_hostname_name         = "stage_shawnstark_net"
-  http_redirect_rule_set_name     = local.staging_http_redirect_rule_set
-  primary_backend_set_name        = local.staging_primary_backend_set_name
-  alternate_backend_set_name      = local.staging_alt_backend_set_name
-  backend_ip_address              = module.staging_instance.private_ip
-  primary_backend_port            = 443
-  alternate_backend_port          = 8443
-  health_check_path               = var.staging_load_balancer_health_check_path
+  compartment_id                = module.environment_compartment.id
+  display_name                  = local.load_balancer_name
+  subnet_ids                    = [module.environment_network.public_subnet_id]
+  network_security_group_ids    = [module.load_balancer_nsg.id]
+  shape                         = var.load_balancer_shape
+  minimum_bandwidth_in_mbps     = var.load_balancer_min_bandwidth_mbps
+  maximum_bandwidth_in_mbps     = var.load_balancer_max_bandwidth_mbps
+  certificate_mode              = var.load_balancer_certificate_mode
+  certificate_name              = var.load_balancer_certificate_name
+  http_redirect_rule_set_name   = local.staging_http_redirect_rule_set
+  http_default_backend_set_name = local.staging_primary_backend_set_name
+  listeners = [
+    {
+      name             = "stage_abidex_org"
+      hostname         = var.stage_abidex_org_hostname
+      backend_set_name = local.staging_primary_backend_set_name
+    },
+    {
+      name             = "stage_shawnstark_net"
+      hostname         = var.stage_shawnstark_net_hostname
+      backend_set_name = local.staging_alt_backend_set_name
+    },
+    {
+      name             = "abidex_org"
+      hostname         = var.abidex_org_hostname
+      backend_set_name = local.prod_primary_backend_set_name
+    },
+    {
+      name             = "shawnstark_net"
+      hostname         = var.shawnstark_net_hostname
+      backend_set_name = local.prod_alt_backend_set_name
+    }
+  ]
+  backend_sets = [
+    {
+      name        = local.staging_primary_backend_set_name
+      port        = 443
+      backend_ips = [module.staging_instance.private_ip]
+    },
+    {
+      name        = local.staging_alt_backend_set_name
+      port        = 8443
+      backend_ips = [module.staging_instance.private_ip]
+    },
+    {
+      name        = local.prod_primary_backend_set_name
+      port        = 443
+      backend_ips = [module.app_instance_001.private_ip, module.app_instance_002.private_ip]
+    },
+    {
+      name        = local.prod_alt_backend_set_name
+      port        = 8443
+      backend_ips = [module.app_instance_001.private_ip, module.app_instance_002.private_ip]
+    }
+  ]
+  health_check_path               = var.load_balancer_health_check_path
   verify_backend_peer_certificate = false
 }

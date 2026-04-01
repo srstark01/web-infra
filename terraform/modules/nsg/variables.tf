@@ -13,20 +13,3 @@ variable "display_name" {
   description = "Display name for the NSG."
   type        = string
 }
-
-variable "rules" {
-  description = "Security rules to create in the NSG."
-  type = list(object({
-    description = string
-    direction   = string
-    protocol    = string
-    cidr        = string
-    cidr_type   = string
-    stateless   = optional(bool, false)
-    tcp_port_range = optional(object({
-      min = number
-      max = number
-    }), null)
-  }))
-  default = []
-}

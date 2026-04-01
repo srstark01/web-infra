@@ -72,9 +72,9 @@ output "management_instance_001_public_ip" {
   value       = module.management_instance.public_ip
 }
 
-output "management_instance_001_nsg_id" {
+output "mgmt_instances_nsg_id" {
   description = "OCID of the NSG attached to the management instance."
-  value       = module.management_instance_001_nsg.id
+  value       = module.mgmt_instances_nsg.id
 }
 
 output "staging_instance_001_id" {
@@ -92,22 +92,62 @@ output "staging_instance_001_public_ip" {
   value       = module.staging_instance.public_ip
 }
 
-output "staging_instance_001_nsg_id" {
+output "stg_instances_nsg_id" {
   description = "OCID of the NSG attached to the staging instance."
-  value       = module.staging_instance_001_nsg.id
+  value       = module.stg_instances_nsg.id
 }
 
-output "staging_load_balancer_id" {
+output "app_instance_001_id" {
+  description = "OCID of app-001."
+  value       = module.app_instance_001.id
+}
+
+output "app_instance_001_private_ip" {
+  description = "Primary private IP address of app-001."
+  value       = module.app_instance_001.private_ip
+}
+
+output "app_instance_001_public_ip" {
+  description = "Primary public IP address of app-001, if assigned."
+  value       = module.app_instance_001.public_ip
+}
+
+output "app_instance_001_nsg_id" {
+  description = "OCID of the NSG attached to app-001."
+  value       = module.app_instances_nsg.id
+}
+
+output "app_instance_002_id" {
+  description = "OCID of app-002."
+  value       = module.app_instance_002.id
+}
+
+output "app_instance_002_private_ip" {
+  description = "Primary private IP address of app-002."
+  value       = module.app_instance_002.private_ip
+}
+
+output "app_instance_002_public_ip" {
+  description = "Primary public IP address of app-002, if assigned."
+  value       = module.app_instance_002.public_ip
+}
+
+output "app_instance_002_nsg_id" {
+  description = "OCID of the NSG attached to app-002."
+  value       = module.app_instances_nsg.id
+}
+
+output "load_balancer_id" {
   description = "OCID of the staging load balancer."
-  value       = module.staging_load_balancer.id
+  value       = module.load_balancer.id
 }
 
-output "staging_load_balancer_public_ips" {
+output "load_balancer_public_ips" {
   description = "Public IP addresses assigned to the staging load balancer."
-  value       = module.staging_load_balancer.public_ips
+  value       = module.load_balancer.public_ips
 }
 
-output "staging_load_balancer_nsg_id" {
+output "load_balancer_nsg_id" {
   description = "OCID of the NSG attached to the staging load balancer."
-  value       = module.staging_load_balancer_nsg.id
+  value       = module.load_balancer_nsg.id
 }
