@@ -137,6 +137,41 @@ output "app_instance_002_nsg_id" {
   value       = module.app_instances_nsg.id
 }
 
+output "autonomous_database_id" {
+  description = "OCID of the Autonomous Database."
+  value       = module.autonomous_database.id
+}
+
+output "vault_id" {
+  description = "OCID of the environment vault."
+  value       = module.environment_vault.vault_id
+}
+
+output "vault_key_id" {
+  description = "OCID of the environment vault master key."
+  value       = module.environment_vault.key_id
+}
+
+output "vault_secret_ids" {
+  description = "Vault secret OCIDs keyed by secret name."
+  value       = module.environment_vault.secret_ids
+}
+
+output "autonomous_database_display_name" {
+  description = "Display name of the Autonomous Database."
+  value       = module.autonomous_database.display_name
+}
+
+output "autonomous_database_db_name" {
+  description = "Database name of the Autonomous Database."
+  value       = module.autonomous_database.db_name
+}
+
+output "autonomous_database_whitelisted_ips" {
+  description = "Public IP allowlist applied to the Autonomous Database."
+  value       = module.autonomous_database.whitelisted_ips
+}
+
 output "load_balancer_id" {
   description = "OCID of the staging load balancer."
   value       = module.load_balancer.id

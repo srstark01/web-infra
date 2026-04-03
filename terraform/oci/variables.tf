@@ -166,6 +166,117 @@ variable "app_instance_002_private_ip_last_octet" {
   }
 }
 
+// Autonomous Database configuration.
+variable "adb_display_name" {
+  description = "Optional display name override for the Autonomous Database. If null, a name is derived from the environment naming pattern."
+  type        = string
+  default     = null
+}
+
+variable "adb_name" {
+  description = "Optional database name override for the Autonomous Database. If null, a short alphanumeric name is derived from the environment naming pattern."
+  type        = string
+  default     = null
+}
+
+variable "adb_admin_password_length" {
+  description = "Generated length for the Autonomous Database admin password secret."
+  type        = number
+  default     = 24
+}
+
+variable "adb_wallet_password_length" {
+  description = "Generated length for the Autonomous Database wallet password secrets."
+  type        = number
+  default     = 24
+}
+
+variable "adb_workload" {
+  description = "Workload type for the Autonomous Database."
+  type        = string
+  default     = "OLTP"
+
+  validation {
+    condition     = contains(["OLTP", "DW", "AJD", "APEX"], var.adb_workload)
+    error_message = "adb_workload must be one of \"OLTP\", \"DW\", \"AJD\", or \"APEX\"."
+  }
+}
+
+variable "adb_version" {
+  description = "Database version for the Autonomous Database."
+  type        = string
+  default     = "23ai"
+}
+
+variable "adb_is_free_tier" {
+  description = "Whether to create the Autonomous Database as an Always Free instance."
+  type        = bool
+  default     = true
+}
+
+variable "adb_license_model" {
+  description = "License model for the Autonomous Database."
+  type        = string
+  default     = "LICENSE_INCLUDED"
+
+  validation {
+    condition     = contains(["LICENSE_INCLUDED", "BRING_YOUR_OWN_LICENSE"], var.adb_license_model)
+    error_message = "adb_license_model must be either \"LICENSE_INCLUDED\" or \"BRING_YOUR_OWN_LICENSE\"."
+  }
+}
+
+variable "vault_display_name" {
+  description = "Optional display name override for the environment vault."
+  type        = string
+  default     = null
+}
+
+variable "vault_type" {
+  description = "Vault type for the environment vault."
+  type        = string
+  default     = "DEFAULT"
+
+  validation {
+    condition     = contains(["DEFAULT", "VIRTUAL_PRIVATE"], var.vault_type)
+    error_message = "vault_type must be either \"DEFAULT\" or \"VIRTUAL_PRIVATE\"."
+  }
+}
+
+variable "vault_key_display_name" {
+  description = "Optional display name override for the environment vault master key."
+  type        = string
+  default     = null
+}
+
+variable "vault_key_algorithm" {
+  description = "Algorithm used for the environment vault master key."
+  type        = string
+  default     = "AES"
+}
+
+variable "vault_key_length" {
+  description = "Length in bytes for the environment vault master key."
+  type        = number
+  default     = 32
+}
+
+variable "vault_key_protection_mode" {
+  description = "Protection mode for the environment vault master key."
+  type        = string
+  default     = "SOFTWARE"
+
+  validation {
+    condition     = contains(["HSM", "SOFTWARE"], var.vault_key_protection_mode)
+    error_message = "vault_key_protection_mode must be either \"HSM\" or \"SOFTWARE\"."
+  }
+}
+
+variable "vault_key_is_auto_rotation_enabled" {
+  description = "Whether automatic rotation is enabled for the environment vault master key."
+  type        = bool
+  default     = false
+}
+
 variable "local_public_IP" {
   description = "Trusted public CIDR allowed to reach the management instance."
   type        = string

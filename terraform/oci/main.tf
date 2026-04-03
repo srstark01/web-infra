@@ -20,6 +20,14 @@ locals {
   app_instance_001_name            = "${local.environment_compartment_name}-app-001"
   app_instances_nsg_name           = "${local.environment_compartment_name}-app-nodes-nsg"
   app_instance_002_name            = "${local.environment_compartment_name}-app-002"
+  vault_name                       = "${local.environment_compartment_name}-vault"
+  vault_key_name                   = "${local.environment_compartment_name}-vault-key"
+  autonomous_database_display_name = "${local.environment_compartment_name}-adb"
+  autonomous_database_name = substr(
+    lower(replace(replace("${var.project_name}${var.environment_name}adb", "-", ""), "_", "")),
+    0,
+    14,
+  )
   load_balancer_name               = "${local.environment_compartment_name}-stg-lb-001"
   load_balancer_nsg_name           = "${local.environment_compartment_name}-stg-lb-001-nsg"
   staging_http_redirect_rule_set   = "http_to_https"
@@ -43,6 +51,12 @@ locals {
     var.app_prod_subnet_cidr_block,
     var.app_instance_002_private_ip_last_octet,
   )
+  adb_secret_names = {
+    adb_admin_password  = "${local.environment_compartment_name}-adb-admin-password"
+    adb_mgmt_password   = "${local.environment_compartment_name}-adb-mgmt-password"
+    adb_app_password    = "${local.environment_compartment_name}-adb-app-password"
+    adb_wallet_password = "${local.environment_compartment_name}-adb-wallet-password"
+  }
 }
 
 moved {
@@ -84,6 +98,45 @@ module "environment_compartment" {
   parent_compartment_id = local.resolved_parent_compartment_id
   name                  = local.environment_compartment_name
   description           = var.environment_description
+}
+
+module "environment_vault" {
+  source = "../modules/vault"
+
+  compartment_id               = module.environment_compartment.id
+  vault_display_name           = coalesce(var.vault_display_name, local.vault_name)
+  vault_type                   = var.vault_type
+  key_display_name             = coalesce(var.vault_key_display_name, local.vault_key_name)
+  key_algorithm                = var.vault_key_algorithm
+  key_length                   = var.vault_key_length
+  key_protection_mode          = var.vault_key_protection_mode
+  key_is_auto_rotation_enabled = var.vault_key_is_auto_rotation_enabled
+  secrets = {
+    (local.adb_secret_names.adb_admin_password) = {
+      description         = "Admin password for the environment Autonomous Database."
+      auto_generate       = true
+      passphrase_length   = var.adb_admin_password_length
+      generation_template = "DBAAS_DEFAULT_PASSWORD"
+    }
+    (local.adb_secret_names.adb_mgmt_password) = {
+      description         = "Password for the mgmt Autonomous Database user."
+      auto_generate       = true
+      passphrase_length   = var.adb_wallet_password_length
+      generation_template = "DBAAS_DEFAULT_PASSWORD"
+    }
+    (local.adb_secret_names.adb_app_password) = {
+      description         = "Password for the app Autonomous Database user."
+      auto_generate       = true
+      passphrase_length   = var.adb_wallet_password_length
+      generation_template = "DBAAS_DEFAULT_PASSWORD"
+    }
+    (local.adb_secret_names.adb_wallet_password) = {
+      description         = "Shared wallet password for the Autonomous Database client bundle."
+      auto_generate       = true
+      passphrase_length   = var.adb_wallet_password_length
+      generation_template = "DBAAS_DEFAULT_PASSWORD"
+    }
+  }
 }
 
 data "oci_identity_availability_domains" "environment" {
@@ -229,6 +282,24 @@ module "app_instance_002" {
   ssh_authorized_keys     = trimspace(file(pathexpand(var.management_ssh_authorized_keys_path)))
   image_id                = data.oci_core_images.management.images[0].id
   boot_volume_size_in_gbs = var.management_boot_volume_size_in_gbs
+}
+
+module "autonomous_database" {
+  source = "../modules/autonomous-database"
+
+  compartment_id                       = module.environment_compartment.id
+  display_name                         = coalesce(var.adb_display_name, local.autonomous_database_display_name)
+  db_name                              = coalesce(var.adb_name, local.autonomous_database_name)
+  admin_password_secret_id             = module.environment_vault.secret_ids[local.adb_secret_names.adb_admin_password]
+  admin_password_secret_version_number = null
+  db_workload                          = var.adb_workload
+  db_version                           = var.adb_version
+  is_free_tier                         = var.adb_is_free_tier
+  license_model                        = var.adb_license_model
+  whitelisted_ips = [
+    var.local_public_IP,
+    "${module.management_instance.public_ip}/32",
+  ]
 }
 
 module "load_balancer_nsg" {
